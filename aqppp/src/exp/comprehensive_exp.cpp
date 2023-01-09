@@ -118,7 +118,8 @@ namespace expDemo {
 				std::vector <std::vector<double>> tpsample;
 				std::vector<std::vector<aqppp::CA>> tpcasample = std::vector<std::vector<aqppp::CA>>();
 				aqppp::Tool::TransSample(sample, tpcasample);
-				std::pair<double, double> read_sample_times = ReadSamples(sqlconnectionhandle, tppar, 1, tpsample, std::vector <std::vector<double>>());
+				std::vector <std::vector<double>> small_sample = std::vector <std::vector<double>>();
+				std::pair<double, double> read_sample_times = ReadSamples(sqlconnectionhandle, tppar, 1, tpsample, small_sample);
 				aqppp::Tool::GenUserQuires(tpsample, tpcasample, tppar.RAND_SEED, exp_par.QUERY_NUM, { exp_par.MIN_QUERY_SELECTIVELY,exp_par.MAX_QUERY_SELECTIVELY }, user_queries);
 			}
 			else
@@ -203,7 +204,7 @@ namespace expDemo {
 
 
 				double t5 = clock();
-				double real_value = QueryRealValue(cur_q, PAR.TABLE_NAME, sqlconnectionhandle, PAR,"sum");
+				double real_value = QueryRealValue(cur_q, PAR.TABLE_NAME, sqlconnectionhandle, PAR, "sum");
 				double time_direct = (clock() - t5) / CLOCKS_PER_SEC;
 
 				double selectively = aqppp::Tool::EstimateSelectively(sample, cur_q).second;

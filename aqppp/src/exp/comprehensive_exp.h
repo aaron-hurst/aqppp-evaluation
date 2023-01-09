@@ -43,6 +43,6 @@ namespace expDemo {
 	public:
 
 		static int Exp(SQLHANDLE& sqlconnectionhandle);
-		static int ComprehensiveExp::RunOnce(SQLHANDLE& sqlconnectionhandle, aqppp::Settings PAR);
+		static int RunOnce(SQLHANDLE& sqlconnectionhandle, aqppp::Settings PAR);
 	};
 }

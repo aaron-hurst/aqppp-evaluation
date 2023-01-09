@@ -30,7 +30,7 @@ namespace aqppp {
 	private:
 		double ComputeDataCube(const std::vector<std::vector<CA>>& mtl_points, SQLHANDLE &sqlconnectionhandle, MTL_STRU& o_mtl_data, std::string query_type, const DistId &distinct_ids = DistId());
 		void ComputeSumCube(int a, int b, const std::vector<int>& size_of_dimension, std::vector<int>& cur_ind, MTL_STRU& o_mtl_res);
-		static void  Precompute::ComputeDataCubeOneThread(int thread_id, int start_row, int end_row, int CONDITION_DIM, const std::vector<std::vector<CA>> &mtl_points, double(&table)[11][1000000], std::vector<double>& cube, std::vector<int>& cube_sizes, std::vector<std::mutex>& cube_locks);
-		static void  Precompute::ReadColumnOneThread(SQLHANDLE &sqlstatementhandle);
+		static void  ComputeDataCubeOneThread(int thread_id, int start_row, int end_row, int CONDITION_DIM, const std::vector<std::vector<CA>> &mtl_points, double(&table)[11][1000000], std::vector<double>& cube, std::vector<int>& cube_sizes, std::vector<std::mutex>& cube_locks);
+		static void ReadColumnOneThread(SQLHANDLE &sqlstatementhandle);
 	};
 }

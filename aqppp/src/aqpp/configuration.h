@@ -1,7 +1,8 @@
 #pragma once
-#include<vector>
-#include<any>
-#include<map>
+#include <vector>
+#include <any>
+#include <map>
+#include <string>
 
 namespace aqppp {
 	class Configuration {

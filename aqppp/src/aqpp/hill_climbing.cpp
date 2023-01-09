@@ -36,7 +36,7 @@ namespace aqppp {
 	
 
 
-	double  HillClimbing::ComputeMaxError(const std::vector<CA>& cur_col, const std::vector<CA>& cur_mtl_ca)
+	double HillClimbing::ComputeMaxError(const std::vector<CA>& cur_col, const std::vector<CA>& cur_mtl_ca)
 	{
 		if (cur_col.size() == cur_mtl_ca.size()) return 0.0;
 		const int MTL_POINT_NUM = cur_mtl_ca.size();
@@ -342,6 +342,14 @@ namespace aqppp {
 		return this->PAR.CI_INDEX*(sqrt(max1 / this->PAR.SAMPLE_ROW_NUM) + sqrt(max2 / this->PAR.SAMPLE_ROW_NUM))*(double)this->PAR.SAMPLE_ROW_NUM / (double)this->PAR.SAMPLE_RATE;
 	}
 
+	// Single-argument alias that allows for a default value for the second argument
+	// Based on this suggestion: https://stackoverflow.com/a/3147283
+	double HillClimbing::ComputeMaxError(const Piece_type& pieces)
+	{
+		std::vector<std::pair<int, double>> o_max_vars = std::vector<std::pair<int, double>>();
+		return ComputeMaxError(pieces, o_max_vars);
+	}
+
 
 	//find remove_pid with min var, but except ids in except_id
 	int HillClimbing::FindRemovePoint(const Remove_type  &remove_max_var, std::set<int>& except_id)
@@ -452,7 +460,8 @@ namespace aqppp {
 		std::pair<int, int> id_pie = { -1,-1 };
 		double min_err = DBL_MAX;
 		std::vector<std::pair<int, int>> max_pieces;
-		FindTwoMaxPieces(pieces, max_pieces, std::vector<std::pair<int, double>>());
+		std::vector<std::pair<int, double>> max_vars_info = std::vector<std::pair<int, double>>();
+		FindTwoMaxPieces(pieces, max_pieces, max_vars_info);
 		if ((max_pieces.size() == 1))
 		{
 			std::pair<int, int> maxp = max_pieces[0];
@@ -608,7 +617,8 @@ namespace aqppp {
 		{
 
 			std::vector<std::pair<int, int>> max_pieces = std::vector<std::pair<int, int>>();
-			FindTwoMaxPieces(pieces, max_pieces, std::vector<std::pair<int, double>>());
+			std::vector<std::pair<int, double>> max_vars_info = std::vector<std::pair<int, double>>();
+			FindTwoMaxPieces(pieces, max_pieces, max_vars_info);
 
 			std::set<int> move_candicate = std::set<int>();
 			for (int i = 0;i < max_pieces.size();i++)

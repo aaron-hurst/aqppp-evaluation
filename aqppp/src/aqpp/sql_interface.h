@@ -1,23 +1,23 @@
 #pragma once
-#include<vector>
-#include<string>
-#include<time.h>
-#include<iostream>
-#include<assert.h>
+#include <vector>
+#include <string>
+#include <time.h>
+#include <iostream>
+#include <assert.h>
 #include <windows.h>
 #include <sqltypes.h>
 #include <sql.h>
 #include <sqlext.h>
-#include<map>
+#include <map>
 
 namespace aqppp {
 	class SqlInterface
 	{
 	public:
 
-		static int SqlInterface::ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn, std::string user, std::string pwd);
+		static int ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn, std::string user, std::string pwd);
 		static void ShowError(unsigned int handletype, const SQLHANDLE& handle);
-		static void SqlInterface::MakeSqlConnection(std::string odbc_name, std::string user_name, std::string pwd, SQLHANDLE &sqlconnectionhandle);
+		static void MakeSqlConnection(std::string odbc_name, std::string user_name, std::string pwd, SQLHANDLE &sqlconnectionhandle);
 		/*
 		return a query result of given string query.
 		*/

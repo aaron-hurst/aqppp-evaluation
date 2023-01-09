@@ -118,7 +118,8 @@ namespace aqppp
 		//cout << "sample rate" <<this->PAR.SAMPLE_RATE << endl;
 		HillClimbing climb_method = HillClimbing(this->PAR.SAMPLE_ROW_NUM, this->PAR.SAMPLE_RATE, this->PAR.CI_INDEX, this->PAR.CLIMB_MAX_ITER, this->PAR.CLIMB_INIT_DISTINCT_EVEN);
 
-		double err_max = climb_method.ChoosePoints1Dim(cur_col, k_min, std::vector<CA>(), 0, 0, CLB_EVEN_INIT, ADJUST_WAY);
+		std::vector<CA> mtl_pts = std::vector<CA>();
+		double err_max = climb_method.ChoosePoints1Dim(cur_col, k_min, mtl_pts, 0, 0, CLB_EVEN_INIT, ADJUST_WAY);
 
 		int k_max = cur_col.size();
 		double y_gap = (1.0 - 1.0 / sqrt((double)k_max)) / (double)this->PAR.PIECE_NUM;
@@ -130,7 +131,8 @@ namespace aqppp
 			double cur_y = 1.0 - pi*y_gap;
 			int cur_k = (1.0 / cur_y)*(1.0 / cur_y);
 			while (cur_k <= o_err_profile[pi - 1].mtl_num && cur_k < k_max) cur_k++;
-			double cur_err = climb_method.ChoosePoints1Dim(cur_col, cur_k, std::vector<CA>());
+			std::vector<CA> mtl_pts = std::vector<CA>();
+			double cur_err = climb_method.ChoosePoints1Dim(cur_col, cur_k, mtl_pts);
 			if (cur_err > o_err_profile[pi - 1].err)
 			{
 				//cout << "err profile not decrease in point" << pi << " " << o_err_profile[pi - 1].err << " " << cur_err << endl;

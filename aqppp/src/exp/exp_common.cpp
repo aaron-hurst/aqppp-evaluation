@@ -113,6 +113,20 @@ namespace expDemo {
 		return value;
 	}
 
+	// Alias with a default argument for the 
+	double QueryRealValue(
+		const std::vector<aqppp::Condition>& cur_q,
+		std::string table_name,
+		SQLHANDLE& sqlconnectionhandle,
+		const aqppp::Settings PAR,
+		std::string agg_action
+	)
+	{
+		std::vector<std::unordered_map<int, std::string>> distinct_itos = std::vector<std::unordered_map<int, std::string>>();
+		bool CLEANCACHE = false;
+		return QueryRealValue(cur_q, table_name, sqlconnectionhandle, PAR, agg_action, distinct_itos, CLEANCACHE);
+	}
+
 	/*
 	double count_db(string table_name, MYSQL* conn, string db_name) {
 		string s = "select  count(*) from " + db_name + "." + table_name + ";";

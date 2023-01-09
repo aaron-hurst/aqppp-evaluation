@@ -1,5 +1,6 @@
 //#include"stdafx.h"
-#include"common_content.h"
+#include "common_content.h"
+#include <iostream>
 
 namespace aqppp {
 

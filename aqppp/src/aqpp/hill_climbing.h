@@ -74,7 +74,7 @@ namespace aqppp {
 
 
 
-		double  ComputeMaxError(const std::vector<CA>& cur_col, const std::vector<CA>& cur_mtl_ca);
+		double ComputeMaxError(const std::vector<CA>& cur_col, const std::vector<CA>& cur_mtl_ca);
 
 		// force mtl last point. DONOT have fake mtl point.
 		void InitPointsEven(const std::vector<CA>&CAsample, int MTL_POINT_NUM, std::vector<CA>& o_mtl_points);
@@ -125,10 +125,11 @@ namespace aqppp {
 		max_vars_info:
 		return max var 1, max_var 2 and related point ids.
 		*/
-		static void FindTwoMaxPieces(const Piece_type &pieces, std::vector<std::pair<int, int>> &o_max_pieces, std::vector<std::pair<int, double>> &o_max_vars_info);
+		static void FindTwoMaxPieces(const Piece_type& pieces, std::vector<std::pair<int, int>>& o_max_pieces, std::vector<std::pair<int, double>>& o_max_vars_info);
 
 
-		double ComputeMaxError(const Piece_type &pieces, std::vector<std::pair<int, double>> &o_max_vars = std::vector<std::pair<int, double>>());
+		double ComputeMaxError(const Piece_type& pieces, std::vector<std::pair<int, double>>& o_max_vars);
+		double ComputeMaxError(const Piece_type& pieces);
 
 
 		//find remove_pid with min var, but except ids in except_id

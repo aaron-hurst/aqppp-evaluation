@@ -39,7 +39,8 @@ int GenQuery( SQLHANDLE &sqlconnectionhandle)
 	aqppp::Settings PAR = aqppp::Settings();
 	PAR.CONDITION_NAMES = { "L_ORDERKEY","L_PARTKEY" };
 	aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE,PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
-	expDemo::ReadSamples(sqlconnectionhandle, PAR, 1, sample, std::vector<std::vector<double>>());
+	std::vector <std::vector<double>> small_sample = std::vector <std::vector<double>>(); 
+	expDemo::ReadSamples(sqlconnectionhandle, PAR, 1, sample, small_sample);
 	std::vector<std::vector<aqppp::CA>> CAsample = std::vector<std::vector<aqppp::CA>>();
 	aqppp::Tool::TransSample(sample, CAsample);
 	std::vector<std::vector<aqppp::Condition>> user_queries = std::vector<std::vector<aqppp::Condition>>();
@@ -77,8 +78,11 @@ int main()
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlenvhandle)) return -1;
 	if (SQL_SUCCESS != SQLSetEnvAttr(sqlenvhandle, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)) return -1;
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_DBC, sqlenvhandle, &sqlconnectionhandle)) return -1;
-	
-	switch (SQLConnect(sqlconnectionhandle, L"SQLServer64", SQL_NTS, L"aqpplus", SQL_NTS, L"aqpplus", SQL_NTS))    //this is the connection string to connect SQLServer.
+
+	SQLWCHAR serverName = (SQLWCHAR)"D43139";
+	SQLWCHAR userName = (SQLWCHAR)"aqp";
+	SQLWCHAR auth = (SQLWCHAR)"aqpevaluation";
+	switch (SQLConnect(sqlconnectionhandle, &serverName, SQL_NTS, &userName, SQL_NTS, &auth, SQL_NTS))    //this is the connection string to connect SQLServer.
 	{
 	case SQL_SUCCESS_WITH_INFO:
 		std::cout << "success" << std::endl;

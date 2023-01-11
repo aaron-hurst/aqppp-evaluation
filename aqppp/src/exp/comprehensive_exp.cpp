@@ -10,11 +10,11 @@ namespace expDemo {
 	 const aqppp::Settings ComprehensiveExp::InitPar4DefaultSample()
 	 {
 		 aqppp::Settings PAR;
-		 PAR.DB_NAME = "skew_s10_z2.dbo";
-		 PAR.SAMPLE_NAME = "cpp_sample";
-		 PAR.SAMPLE_RATE = 0.003;
+		 PAR.DB_NAME = "uci_household_power_consumption.dbo";
+		 PAR.SAMPLE_NAME = "default_sample";
+		 PAR.SAMPLE_RATE = 0.01;
 		 PAR.ALL_MTL_POINTS = 20000;
-		 PAR.CREATE_DB_SAMPLES = false;
+		 PAR.CREATE_DB_SAMPLES = true;
 		 return PAR;
 	 }
 
@@ -77,14 +77,12 @@ namespace expDemo {
 			fopen_s(&info_file, (root_path+"/info.txt").data(), "w");
 			fopen_s(&form_file, (root_path+"/form_res.txt").data(), "w");
 			fopen_s(&par_file, (root_path+"/par.txt").data(), "w");
-			fopen_s(&query_file, (root_path+"/queries.txt").data(), "w");
-			
-			
+			fopen_s(&query_file, (root_path+"/queries.txt").data(), "w");			
 
 			/*----------creat sample, gen query.------------*/
 			clock_t bt = clock();
 			std::pair<double, double> time_create_db_samples;
-			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME,PAR.TABLE_NAME, { PAR.SAMPLE_RATE,PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
+			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
 			std::cout << "time create samples: " << time_create_db_samples.first << " " << time_create_db_samples.second << std::endl;
 			/*----------end creat sample, gen query.---------*/
 

@@ -74,7 +74,7 @@ namespace aqppp {
 	*/
 	std::pair<double, double> SqlInterface::CreateDbSamples(SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name, std::string table_name, std::pair<double, double> sample_rates, std::pair<std::string, std::string> sample_names, std::vector<std::string> num_dim4rand, std::vector<std::string> ctg_dim4rand)
 	{
-		double t1=CreateDbSample(sqlconnectionhandle, seed+1, db_name, table_name,sample_rates.first, sample_names.first, num_dim4rand, ctg_dim4rand);
+		double t1= CreateDbSample(sqlconnectionhandle, seed+1, db_name, table_name, sample_rates.first, sample_names.first, num_dim4rand, ctg_dim4rand);
 		double t2= CreateDbSample(sqlconnectionhandle, seed+2, db_name, sample_names.first, sample_rates.second, sample_names.second, num_dim4rand, ctg_dim4rand);
 		return { t1,t2 };
 	}
@@ -110,6 +110,7 @@ namespace aqppp {
 		std::string drop_sample = "IF OBJECT_ID('" + sample_full_name + "', 'U') IS NOT NULL DROP TABLE " + sample_full_name + "; ";
 		std::string create_sample = "SELECT *  INTO "+sample_full_name + " FROM " + table_full_name + " WHERE " + ComputeRandStr(seed,sample_rate, num_dim4rand, ctg_dim4rand)+";";
 		std::string create_sample_cstore_indx = "CREATE CLUSTERED COLUMNSTORE INDEX cci_"+sample_name+" ON " + sample_full_name + ";";
+		std::cout << "Setting up sample database tables" << std::endl;
 		std::cout << drop_sample << std::endl;
 		std::cout << create_sample << std::endl;
 		std::cout << create_sample_cstore_indx << std::endl;

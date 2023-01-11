@@ -10,8 +10,8 @@
 namespace aqppp {
 	typedef std::vector<std::unordered_map<std::string, int>> DistId;
 	struct Settings {
-		std::string DB_NAME = "skew_s100_z2.dbo";
-		std::string TABLE_NAME = "lineitem";
+		std::string DB_NAME = "uci_household_power_consumption.dbo";
+		std::string TABLE_NAME = "household_power_consumption";
 		std::string SAMPLE_NAME = "sample";
 		std::string SUB_SAMPLE_NAME = "sub_sample";
 		bool CREATE_DB_SAMPLES = true;

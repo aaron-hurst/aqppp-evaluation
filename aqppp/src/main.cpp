@@ -61,29 +61,50 @@ int main()
 	//std::cout<<"convert any:"<<std::any_cast<std::string>(t);
 
 
-
 	srand(0);
-	std::cout << " --------------------------------------------------------------------------------------------------- " << std::endl;
-	std::cout << " The parameters are set at structure 'Settings' in comment_content.h. This code was written using visual studio 2017, and run in Windows System. " << std::endl;
-	std::cout << "It uses ODBC to connect SQL Server 2017. The connection string could be found in the main function(you should set or create related account and ODBC). Please change the connection string based on your setting. " << std::endl;
-	std::cout << "Besides, please load lineitem table into SQLServer, using the name in parameter. For example, if you set par.DB_NAME = 'skew_s100_z2.dbo', and par.TABLE_NAME='lineitem', then crease a database called skew_s100_z2, and a table called lineitem in SQLServer. " << std::endl;
+	std::cout << "---------------------------------------------------------------------------------------------------" << std::endl;
+	std::cout << "The parameters are set at structure 'Settings' in comment_content.h. This code was written using visual studio 2017, and run in Windows System." << std::endl;
+	std::cout << "It uses ODBC to connect SQL Server 2017. The connection string could be found in the main function (you should set or create related account and ODBC). Please change the connection string based on your setting. " << std::endl;
+	std::cout << "Besides, please load lineitem table into SQLServer, using the name in parameter. For example, if you set par.DB_NAME = 'skew_s100_z2.dbo', and par.TABLE_NAME='lineitem', then create a database called skew_s100_z2, and a table called lineitem in SQLServer. " << std::endl;
 	std::cout<<"Then load lineitem.tbl (generated using TPCD benchmark by command -s 100 -z 2 -T L) into the lineitem table in SQLServer. Then the code should work. The results will be saved on exp_result folder." << std::endl;
-	std::cout << " --------------------------------------------------------------------------------------------------- " << std::endl;
+	std::cout << "---------------------------------------------------------------------------------------------------" << std::endl;
 	std::cout << "To run the demo, input 1" << std::endl;
 	//std::cout << "2--query generation" << std::endl;
 
+	//define handles and variables
 	SQLHANDLE sqlenvhandle = NULL;
 	SQLHANDLE sqlconnectionhandle = NULL;
 	SQLHANDLE sqlstatementhandle = NULL;
+	SQLWCHAR retconstring[1000];
+
+	//allocations
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlenvhandle)) return -1;
 	if (SQL_SUCCESS != SQLSetEnvAttr(sqlenvhandle, SQL_ATTR_ODBC_VERSION, (SQLPOINTER)SQL_OV_ODBC3, 0)) return -1;
 	if (SQL_SUCCESS != SQLAllocHandle(SQL_HANDLE_DBC, sqlenvhandle, &sqlconnectionhandle)) return -1;
 
-	SQLWCHAR serverName = (SQLWCHAR)"D43139";
-	SQLWCHAR userName = (SQLWCHAR)"aqp";
-	SQLWCHAR auth = (SQLWCHAR)"aqpevaluation";
-	switch (SQLConnect(sqlconnectionhandle, &serverName, SQL_NTS, &userName, SQL_NTS, &auth, SQL_NTS))    //this is the connection string to connect SQLServer.
-	{
+	//output
+	std::cout << "Attempting connection to SQL Server..." << std::endl;
+
+	//connect to SQL Server
+	switch (
+		SQLDriverConnect(
+			sqlconnectionhandle,
+			NULL,
+			//(SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost, 1433;DATABASE=master;UID=username;PWD=password;",
+			(SQLWCHAR*)L"DRIVER={SQL Server};SERVER=localhost,1434;DATABASE=uci_household_power_consumption;Trusted=true;",
+			SQL_NTS,
+			retconstring,
+			1024,
+			NULL,
+			SQL_DRIVER_NOPROMPT
+		)
+	) {
+	//SQLWCHAR serverName = (SQLWCHAR)"D43139";
+	//SQLWCHAR userName = (SQLWCHAR)"aqp";
+	//SQLWCHAR auth = (SQLWCHAR)"aqpevaluation";
+	////switch (SQLConnect(sqlconnectionhandle, &serverName, SQL_NTS, &userName, SQL_NTS, &auth, SQL_NTS))    //this is the connection string to connect SQLServer.
+	//switch (SQLDriverConnect(sqlconnectionhandle, NULL, (SQLWCHAR*)L"DRIVER={SQL Server};server=localhost;", SQL_NTS, &userName, SQL_NTS, &auth, SQL_NTS))    //this is the connection string to connect SQLServer.
+	//{
 	case SQL_SUCCESS_WITH_INFO:
 		std::cout << "success" << std::endl;
 		ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);

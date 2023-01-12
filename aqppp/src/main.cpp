@@ -38,7 +38,7 @@ int GenQuery( SQLHANDLE &sqlconnectionhandle)
 	std::vector<std::vector<double>> sample = std::vector<std::vector<double>>();
 	aqppp::Settings PAR = aqppp::Settings();
 	PAR.CONDITION_NAMES = { "L_ORDERKEY","L_PARTKEY" };
-	aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE,PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
+	aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
 	std::vector <std::vector<double>> small_sample = std::vector <std::vector<double>>(); 
 	expDemo::ReadSamples(sqlconnectionhandle, PAR, 1, sample, small_sample);
 	std::vector<std::vector<aqppp::CA>> CAsample = std::vector<std::vector<aqppp::CA>>();

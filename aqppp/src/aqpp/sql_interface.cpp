@@ -1,6 +1,6 @@
 //#include"stdafx.h"
-#include"tool.h"
-#include"sql_interface.h"
+#include "tool.h"
+#include "sql_interface.h"
 
 namespace aqppp {
 
@@ -63,7 +63,7 @@ namespace aqppp {
 		std::wstring wquery = std::wstring(query.begin(), query.end());
 		//SQLWCHAR wq[10000] = {};
 		WCHAR* wq = const_cast<WCHAR*>(wquery.c_str());
-		std::wcout << "sql_query:" << wquery << std::endl;
+		std::wcout << "sql_query: " << wquery << std::endl;
 		if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle,wq, SQL_NTS))
 		{
 			ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
@@ -72,43 +72,118 @@ namespace aqppp {
 
 	/*create sample and small_sample table in MySQL database.
 	*/
-	std::pair<double, double> SqlInterface::CreateDbSamples(SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name, std::string table_name, std::pair<double, double> sample_rates, std::pair<std::string, std::string> sample_names, std::vector<std::string> num_dim4rand, std::vector<std::string> ctg_dim4rand)
+	std::pair<double, double> SqlInterface::CreateDbSamples(SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name, std::string table_name, std::pair<double, double> sample_rates, std::pair<std::string, std::string> sample_names)
 	{
-		double t1= CreateDbSample(sqlconnectionhandle, seed+1, db_name, table_name, sample_rates.first, sample_names.first, num_dim4rand, ctg_dim4rand);
-		double t2= CreateDbSample(sqlconnectionhandle, seed+2, db_name, sample_names.first, sample_rates.second, sample_names.second, num_dim4rand, ctg_dim4rand);
-		return { t1,t2 };
+		double t1 = CreateDbSample(sqlconnectionhandle, seed+1, db_name, table_name, sample_rates.first, sample_names.first);
+		double t2 = CreateDbSample(sqlconnectionhandle, seed+2, db_name, sample_names.first, sample_rates.second, sample_names.second);
+		return { t1, t2 };
 	}
 
-	std::string SqlInterface::ComputeRandStr(int seed, double sample_rate, std::vector<std::string> num_dim4rand, std::vector<std::string> ctg_dim4rand)
+	// Get column names for a given table and organise them into numerical and categorical
+	SqlInterface::TableColumns SqlInterface::GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name)
 	{
-		if (num_dim4rand.size() == 0 && ctg_dim4rand.size() == 0)
+		TableColumns results;
+		SQLWCHAR buf_name[128];
+		SQLWCHAR buf_type[128];
+		std::vector<std::string> numeric_types{ "float", "int", "numeric" };  // TODO extend to include all numerical SQL types
+
+		// Prepare SQL query to request all column names and types for the given table
+		std::string stmt = "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + table_name + "';";
+		std::wstring wstmt = std::wstring(stmt.begin(), stmt.end());
+		const wchar_t* char_stmt = wstmt.c_str();
+		SQLHANDLE h_stmt;
+		RETCODE rc;
+		rc = SQLAllocHandle(SQL_HANDLE_STMT, sqlConnectionHandle, &h_stmt);
+		rc = SQLPrepare(h_stmt, (SQLWCHAR*)char_stmt, SQL_NTS);
+
+		// Excecute the query
+		rc = SQLExecDirect(h_stmt, (SQLWCHAR*)char_stmt, SQL_NTS);
+		if (SQL_SUCCEEDED(rc))
 		{
-			num_dim4rand = { "L_ORDERKEY","L_LINENUMBER","L_PARTKEY","L_QUANTITY","L_EXTENDEDPRICE","L_DISCOUNT","L_TAX"};
-			ctg_dim4rand = { "L_COMMENT","L_RETURNFLAG","L_SHIPDATE","L_COMMITDATE","L_RECEIPTDATE","L_SHIPINSTRUCT","L_SHIPMODE" };
+			SQLSMALLINT field_count = 0;
+			SQLNumResultCols(h_stmt, &field_count);
+			if (field_count == 2)
+			{
+				// Loop through the rows in the result set and parse into TableColumns results
+				rc = SQLFetch(h_stmt);
+				SQLLEN ret1;
+				SQLLEN ret2;
+				std::string column_name;
+				std::string column_type;				
+				while (SQL_SUCCEEDED(rc))
+				{
+					// Get data
+					SQLGetData(h_stmt, 1, SQL_C_WCHAR, buf_name, sizeof(buf_name), &ret1);
+					SQLGetData(h_stmt, 2, SQL_C_WCHAR, buf_type, sizeof(buf_type), &ret2);
+
+					// Convert data to string
+					if (ret1 <= 0) {
+						column_name = std::string("(null");
+					}
+					else {
+						std::wstring ws(buf_name);
+						column_name = std::string(ws.begin(), ws.end());
+					}
+					if (ret2 <= 0) {
+						column_type = std::string("(null");
+					}
+					else {
+						std::wstring ws(buf_type);
+						column_type = std::string(ws.begin(), ws.end());
+					}
+
+					// Push column name to correct vector
+					if (std::find(std::begin(numeric_types), std::end(numeric_types), column_type) != std::end(numeric_types)) {
+						results.numeric_columns.push_back(column_name);
+					}
+					else {
+						results.categorical_columns.push_back(column_name);
+					}
+
+					// Get next row from query
+					rc = SQLFetch(h_stmt);
+				}
+				rc = SQLFreeStmt(h_stmt, SQL_DROP);
+			}
+			else
+			{
+				std::cout << "Error: invalid number of fields returned: " << field_count << std::endl;
+			}
 		}
+		else
+		{
+			std::cout << "error" << std::endl;
+			ShowError(SQL_HANDLE_STMT, h_stmt);
+		}
+		return results;
+	};
+
+	std::string SqlInterface::ComputeRandStr(SQLHANDLE& sqlConnectionHandle, std::string table_name, int seed, double sample_rate)
+	{
+		TableColumns table_columns = GetTableColumns(sqlConnectionHandle, table_name);
 		int tpseed = seed + 1;
 		std::string numeric_part = std::to_string(seed);
 		std::string catagory_part = "";
-		for (auto st : num_dim4rand)
+		for (std::string st : table_columns.numeric_columns)
 		{
 			numeric_part += ", " + std::to_string(tpseed) + "*" + st;
 			tpseed++;
 		}
-		for (auto st : ctg_dim4rand)
+		for (auto st : table_columns.categorical_columns)
 		{
-			catagory_part += ", "+st;
+			catagory_part += ", " + st;
 		}
 		return "RAND(BINARY_CHECKSUM(" + numeric_part + catagory_part+"))<=" + std::to_string(sample_rate);
 	}
 
-	double SqlInterface::CreateDbSample(SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name, std::string table_name, double sample_rate, std::string sample_name, std::vector<std::string> num_dim4rand, std::vector<std::string> ctg_dim4rand)
+	double SqlInterface::CreateDbSample(SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name, std::string table_name, double sample_rate, std::string sample_name)
 	{
 		SQLHANDLE sqlstatementhandle = NULL;
 		if (SQLAllocHandle(SQL_HANDLE_STMT, sqlconnectionhandle, &sqlstatementhandle) != SQL_SUCCESS) return -1;
 		std::string sample_full_name = db_name + "." + sample_name;
 		std::string table_full_name = db_name + "." + table_name;
 		std::string drop_sample = "IF OBJECT_ID('" + sample_full_name + "', 'U') IS NOT NULL DROP TABLE " + sample_full_name + "; ";
-		std::string create_sample = "SELECT *  INTO "+sample_full_name + " FROM " + table_full_name + " WHERE " + ComputeRandStr(seed,sample_rate, num_dim4rand, ctg_dim4rand)+";";
+		std::string create_sample = "SELECT * INTO " + sample_full_name + " FROM " + table_full_name + " WHERE " + ComputeRandStr(sqlconnectionhandle, table_name, seed, sample_rate) + ";";
 		std::string create_sample_cstore_indx = "CREATE CLUSTERED COLUMNSTORE INDEX cci_"+sample_name+" ON " + sample_full_name + ";";
 		std::cout << "Setting up sample database tables" << std::endl;
 		std::cout << drop_sample << std::endl;

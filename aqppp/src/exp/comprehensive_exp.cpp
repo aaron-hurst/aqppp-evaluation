@@ -82,7 +82,7 @@ namespace expDemo {
 			/*----------creat sample, gen query.------------*/
 			clock_t bt = clock();
 			std::pair<double, double> time_create_db_samples;
-			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME,PAR.SUB_SAMPLE_NAME });
+			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME, PAR.SUB_SAMPLE_NAME });
 			std::cout << "time create samples: " << time_create_db_samples.first << " " << time_create_db_samples.second << std::endl;
 			/*----------end creat sample, gen query.---------*/
 

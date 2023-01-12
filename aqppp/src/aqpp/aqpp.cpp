@@ -101,8 +101,11 @@ namespace aqppp {
 	Condition Aqpp::GenCondition(const std::vector<CA>& mtl_points, int lbid, int ubid)
 	{
 		//lbid<0 is valid, but ubid<0 is invalid. but when ubid<0 isn't a valid RG, and shouldn't GenCondition. 
-		assert(ubid >= 0 && ubid<mtl_points.size());
-		assert(lbid < mtl_points.size());
+		// NOTE: We need to store mtl_points.size() as an int, otherwise comparison
+		// to lbin fails for lbid<0 due to mtl_points.size() being unsigned.
+		const int mtl_points_size = mtl_points.size();  
+		assert(ubid >= 0 && ubid < mtl_points_size);
+		assert(lbid < mtl_points_size);
 		Condition d = Condition();
 		d.lb_id = lbid;
 		d.ub_id = ubid;

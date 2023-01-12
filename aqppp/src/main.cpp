@@ -112,7 +112,6 @@ int main()
 	default:
 		std::cout << "error" << std::endl;
 		ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
-		getchar();
 		return -1;
 	}
 

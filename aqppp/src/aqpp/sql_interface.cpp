@@ -203,7 +203,8 @@ namespace aqppp {
 	double SqlInterface::Column2Numeric(SQLHANDLE &sqlstatementhandle, int col_id, std::string col_name)
 	{
 		const int max_char_len = 300;
-		if (col_name == "L_SHIPDATE" || col_name == "L_COMMITDATE" || col_name == "L_RECEIPTDATE" || col_name=="visitDate" || col_name=="pickup_date" || col_name=="dropoff_date")
+		transform(col_name.begin(), col_name.end(), col_name.begin(), [](unsigned char c) { return std::tolower(c); });
+		if (col_name.find("date") != std::string::npos)  // date columns
 		{
 			double data = -1;
 			TIMESTAMP_STRUCT ts;
@@ -211,7 +212,7 @@ namespace aqppp {
 			data = ts.year * 10000 + ts.month * 100 + ts.day;
 			return data;
 		}
-		if (col_name == "vendor_name")
+		if (col_name == "vendor_name")  // column only relevant for SSB dataset
 		{
 			double data = 0;
 			char ts[10] = {};
@@ -222,7 +223,7 @@ namespace aqppp {
 			if (name == "VTS") return 3;
 			return -1;
 		}
-		if (col_name == "pickup_time" || col_name == "dropoff_time")
+		if (col_name.find("time") != std::string::npos)  // time columns
 		{
 			double data = -1;
 			TIMESTAMP_STRUCT ts;
@@ -231,17 +232,20 @@ namespace aqppp {
 			return data;
 		}
 		
-		double data = 0;
-		SQLGetData(sqlstatementhandle, col_id + 1, SQL_C_DOUBLE, &data, 0, NULL);
-		/*if (col_name=="sourceIP")
+		// Otherwise: numerical data
+		// NOTE: It was necessary to change the data type for the buffer in SQLGetData
+		// to float due to the type of the data I am using.
+		// TODO: Make this code adaptive so that it determine which type to use in SQLGetData
+		// by itself (i.e. whether to use SQL_C_FLOAT, SQL_C_DOUBLE, SQL_C_INT, etc.).
+		float data_float = 0;
+		RETCODE rc;
+		rc = SQLGetData(sqlstatementhandle, col_id + 1, SQL_C_FLOAT, &data_float, 0, NULL);
+		if (!SQL_SUCCEEDED(rc))
 		{
-			char data[max_char_len] = {};
-			SQLGetData(sqlstatementhandle, col_id + 1, SQL_C_CHAR, data, 0, NULL);
-			//vector<string> ip_addr = Tool::split(string(data),'.');
-
-
+			std::cout << "Error getting data in SqlInterface::Column2Numeric." << std::endl;
+			ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
 		}
-		*/
+		double data = (double)data_float;
 
 		return data;
 	}
@@ -269,10 +273,10 @@ namespace aqppp {
 		short int COL_NUM = 0;
 		SQLNumResultCols(sqlstatementhandle, &COL_NUM);
 		for (int i = 0; i < COL_NUM; i++)
-			o_table.push_back(std::vector<double>());
+			o_table.push_back(std::vector<double>());  // add a vector to the table for each column in the query
 		while (SQLFetch(sqlstatementhandle) == SQL_SUCCESS)
 		{
-			double acc_data= Column2Numeric(sqlstatementhandle, 0, AGGREGATE_NAME);
+			double acc_data = Column2Numeric(sqlstatementhandle, 0, AGGREGATE_NAME);
 			o_table[0].push_back(acc_data);
 			for (int ci = 1; ci < COL_NUM; ci++)
 			{

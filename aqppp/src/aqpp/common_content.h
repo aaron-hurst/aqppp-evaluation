@@ -17,8 +17,8 @@ namespace aqppp {
 		bool CREATE_DB_SAMPLES = true;
 		double SAMPLE_RATE =0.0005;
 		double SUB_SAMPLE_RATE = 0.1;
-		std::string AGGREGATE_NAME = "L_EXTENDEDPRICE";
-		std::vector<std::string> CONDITION_NAMES = { "L_ORDERKEY","L_SUPPKEY" };
+		std::string AGGREGATE_NAME = "global_reactive_power";
+		std::vector<std::string> CONDITION_NAMES = { "global_active_power", "voltage" };
 		int GROUPBY_LEN = 0;//# attributes in CONDITION_NAMES are group by attributes. the last GROUPBY_LEN cols in CONDITION_NAMES should be group by attributes.
 		double CI_INDEX =1.96;
 		int SAMPLE_ROW_NUM = -1;

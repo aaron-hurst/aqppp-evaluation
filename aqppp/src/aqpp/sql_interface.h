@@ -16,7 +16,7 @@ namespace aqppp {
 	public:
 
 		static int ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn, std::string user, std::string pwd);
-		static void ShowError(unsigned int handletype, const SQLHANDLE& handle);
+		static void ShowError(unsigned int handle_type, const SQLHANDLE& handle);
 		static void MakeSqlConnection(std::string odbc_name, std::string user_name, std::string pwd, SQLHANDLE &sqlconnectionhandle);
 		/*
 		return a query result of given string query.
@@ -33,7 +33,6 @@ namespace aqppp {
 		static double Column2Numeric(SQLHANDLE &sqlstatementhandle, int col_id, std::string col_name);
 		static std::string ReadTableStr(std::string db_name, std::string table_name, std::string AGGREGATE_NAME, std::vector<std::string> CONDITION_NAMES);
 
-	private:
 		// Struct for storing names of numerical and categorical columns
 		struct TableColumns {
 			std::vector<std::string> numeric_columns;
@@ -42,6 +41,8 @@ namespace aqppp {
 
 		// Returns TableColumns struct that lists the columns of the given table
 		static TableColumns GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name);
-
+	
+	private:
+		
 	};
 }

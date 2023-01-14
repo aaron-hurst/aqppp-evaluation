@@ -178,6 +178,7 @@ namespace expDemo {
 			std::cout << "make query now, query num:" << user_queries.size() << std::endl;
 			for (int query_id = 0;query_id < user_queries.size();query_id++)
 			{
+				// Save query details
 				std::cout << "query id " << query_id << std::endl;
 				std::vector<aqppp::Condition> cur_q = user_queries[query_id];
 				fprintf(query_file, "query_id:%d  condition: ", query_id);
@@ -187,6 +188,7 @@ namespace expDemo {
 				}
 				fprintf(query_file, "\n");
 
+				// Query result from sampling?
 				double t3 = clock();
 				std::pair<double, double> spl_sumci = aqppp::Sampling(PAR.SAMPLE_RATE, PAR.CI_INDEX).SamplingForSumQuery(sample, cur_q);
 				//cout << "lala "<<spl_sumci.first << " " << spl_sumci.second << endl;

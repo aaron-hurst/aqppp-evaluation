@@ -4,12 +4,12 @@
 
 namespace aqppp {
 
-	void SqlInterface::ShowError(unsigned int handletype, const SQLHANDLE& handle)
+	void SqlInterface::ShowError(unsigned int handle_type, const SQLHANDLE& handle)
 	{
 		SQLWCHAR sqlstate[1024];
 		SQLWCHAR message[1024];
-		SQLGetDiagRec(handletype, handle, 1, sqlstate, NULL, message, 1024, NULL);
-		std::wcout << "Message: " << message << "\nSQLSTATE: " << sqlstate << std::endl;
+		if (SQL_SUCCESS == SQLGetDiagRec(handle_type, handle, 1, sqlstate, NULL, message, 1024, NULL))
+			std::wcout << "Message: " << message << "\nSQLSTATE: " << sqlstate << std::endl;
 	}
 
 

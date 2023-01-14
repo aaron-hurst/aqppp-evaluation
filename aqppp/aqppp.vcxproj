@@ -190,6 +190,7 @@
     <ClInclude Include="src\aqpp\tool.h" />
     <ClInclude Include="src\exp\exp_common.h" />
     <ClInclude Include="src\exp\comprehensive_exp.h" />
+    <ClInclude Include="src\exp\comparison.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\aqpp\aqpp.cpp" />
@@ -207,6 +208,7 @@
     <ClCompile Include="src\aqpp\tool.cpp" />
     <ClCompile Include="src\exp\exp_common.cpp" />
     <ClCompile Include="src\exp\comprehensive_exp.cpp" />
+    <ClCompile Include="src\exp\comparison.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -162,7 +162,7 @@ namespace aqppp
 
 		/*
 		CA_sample doesn't include fake point.
-		The duplicate conditions in each col has only kept one condition, and the aggreate exists of others has been added to that one.
+		The duplicate conditions in each col has only kept one condition, and the aggregate exists of others has been added to that one.
 		trans original sample into CAsample.
 		note the CAsample doesn't have the accumulation column because it has the struct of condition attribute combined with accumulation arribute.
 		each col of CAsample is the combination of the accumulatation attribute and condition attribute of the original sample. Each column of it is sorted by condition, then aggreate data.

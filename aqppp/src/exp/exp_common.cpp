@@ -40,9 +40,9 @@ namespace expDemo {
 		for (int i = 0;i < run_num;i++)
 		{
 			double cur_sample_time = aqppp::SqlInterface::ReadDb(sqlconnectionhandle, o_sample, o_PAR.DB_NAME, o_PAR.SAMPLE_NAME, o_PAR.AGGREGATE_NAME, o_PAR.CONDITION_NAMES);
-			double cur_small_smaple_time = aqppp::SqlInterface::ReadDb(sqlconnectionhandle, o_small_sample, o_PAR.DB_NAME, o_PAR.SUB_SAMPLE_NAME, o_PAR.AGGREGATE_NAME, o_PAR.CONDITION_NAMES);
+			double cur_small_sample_time = aqppp::SqlInterface::ReadDb(sqlconnectionhandle, o_small_sample, o_PAR.DB_NAME, o_PAR.SUB_SAMPLE_NAME, o_PAR.AGGREGATE_NAME, o_PAR.CONDITION_NAMES);
 			read_sample_times.push_back(cur_sample_time);
-			read_small_sample_times.push_back(cur_small_smaple_time);
+			read_small_sample_times.push_back(cur_small_sample_time);
 		}
 		double time_read_sample = aqppp::Tool::get_percentile(read_sample_times, 0.5);
 		double time_read_small_sample = aqppp::Tool::get_percentile(read_small_sample_times, 0.5);

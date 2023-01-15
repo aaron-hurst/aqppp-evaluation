@@ -142,7 +142,14 @@ namespace expDemo {
 			std::cout << "start mtl..." << std::endl;
 			
 				double t10 = clock();
-				aqppp::AssignBudgetForDimensions(PAR, false).AssignBudget(CAsample, mtl_nums);
+				aqppp::AssignBudgetForDimensions(
+					PAR.SAMPLE_RATE,
+					PAR.ALL_MTL_POINTS,
+					PAR.EP_PIECE_NUM,
+					PAR.SAMPLE_ROW_NUM,
+					PAR.CI_INDEX,
+					PAR.NF_MAX_ITER,
+					PAR.INIT_DISTINCT_EVEN, false).AssignBudget(CAsample, mtl_nums);
 				double time_dist_mtl = (clock() - t10) / CLOCKS_PER_SEC;
 
 				double t2 = clock();

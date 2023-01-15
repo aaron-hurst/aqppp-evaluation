@@ -40,7 +40,7 @@ namespace aqppp {
 		};
 
 		// Returns TableColumns struct that lists the columns of the given table
-		static TableColumns GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name);
+		static const TableColumns GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name);
 	
 	private:
 		

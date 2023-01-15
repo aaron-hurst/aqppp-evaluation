@@ -7,25 +7,22 @@
 
 namespace exp_comparison {
 
+const std::vector<std::string> AGGREGATIONS = {"COUNT", "SUM", "AVG"};
+
 const ComparisonExperiment::Parameters ComparisonExperiment::LoadParameters() {
+  // TODO load parameter values from text file
   Parameters par = Parameters();
-  // load from comparison_expt_settings.txt
   par.OUTPUT_PATH = "exp_result/comparison/" + par.DATASET_NAME + "/" +
-                    "sample_rate_" + std::to_string(samplepar.SAMPLE_RATE_rate);
-  // exp_par.isMTL = false;
-  // exp_par.DROP_INDEX_BEFORE_CREATE = false;
-  // exp_par.QUERY_DB_REAL_VALUE = true;
-  // exp_par.QUERY_DB_SELECTIVELY = false;
-  // exp_par.COVER_DIRECT_RESULT_FILE = false;  //generally this should be
-  // false.
+                    "sample_rate_" + std::to_string(par.SAMPLE_RATE);
+  par.QUERIES_PATH =
+      "../../queries/" + par.DATASET_NAME + "/" + par.QUERIES_FILENAME;
   return par;
 }
 
-double ReadDB(SQLHANDLE& sql_connection_handle,
-              std::vector<std::vector<double>>& o_table,
-              const std::string db_name, const std::string table_name) {
-  // Loads all data from a given database table. Returns the duration.
-
+// Loads all data from a given database table. Returns the duration.
+const double ComparisonExperiment::ReadDB(
+    SQLHANDLE& sql_connection_handle, std::vector<std::vector<double>>& o_table,
+    const std::string db_name, const std::string table_name) {
   double t_start = clock();
   o_table = std::vector<std::vector<double>>();
 
@@ -44,7 +41,7 @@ double ReadDB(SQLHANDLE& sql_connection_handle,
 
   // Loop over database until all data is added to the return vector
   aqppp::SqlInterface::TableColumns table_columns =
-      aqpp::SqlInterface::GetTableColumns(sql_connection_handle, table_name);
+      aqppp::SqlInterface::GetTableColumns(sql_connection_handle, table_name);
   std::vector<std::string> column_names = table_columns.numeric_columns;
   column_names.insert(column_names.end(),
                       table_columns.categorical_columns.begin(),
@@ -61,14 +58,48 @@ double ReadDB(SQLHANDLE& sql_connection_handle,
   return read_time;
 }
 
-std::pair<double, double> ReadSamples(
+// Load queries
+const int ComparisonExperiment::LoadQueries(
+    const std::string query_filepath,
+    std::vector<ComparisonExperiment::Query> o_queries, const int n_columns) {
+  std::ifstream query_file(query_filepath);
+  std::string line;
+  o_queries = std::vector<ComparisonExperiment::Query>();  // init empty
+  while (std::getline(query_file, line)) {
+    // For each row, get the condition column id, low bound and upper bound
+    std::stringstream ss(line);
+    std::string str;
+    std::getline(ss, str, ',');
+    int condition_column_id = std::stoi(str);
+    std::getline(ss, str, ',');
+    int bound_low = std::stod(str);
+    std::getline(ss, str, ',');
+    int bound_high = std::stod(str);
+
+    // Create a query for each combination of aggregation column and aggregation
+    for (int agg_col_id = 0; agg_col_id < n_columns; agg_col_id++) {
+      for (auto aggregation : AGGREGATIONS) {
+        aqppp::Condition condition;
+        condition.lb = bound_low;
+        condition.ub = bound_high;
+        ComparisonExperiment::Query query = {
+            agg_col_id, aggregation, {condition_column_id}, {condition}};
+        o_queries.push_back(query);
+      }
+    }
+  }
+  query_file.close();
+  return 0;
+}
+
+// Returns the median time to retrieve the sample and small sample database
+// tables. The medians are computed over n_runs iterations.
+const std::pair<double, double> ComparisonExperiment::ReadSamples(
     SQLHANDLE& sql_connection_handle, const std::string db_name,
     const std::string sample_table_name,
     const std::string small_sample_table_name,
     std::vector<std::vector<double>>& o_sample,
-    std::vector<std::vector<double>>& o_small_sample, const int n_runs = 10) {
-  // Returns the median time to retrieve the sample and small sample database
-  // tables. The medians are computed over n_runs iterations.
+    std::vector<std::vector<double>>& o_small_sample, const int n_runs) {
   std::vector<double> read_sample_times = std::vector<double>();
   std::vector<double> read_small_sample_times = std::vector<double>();
   for (int i = 0; i < n_runs; i++) {
@@ -83,15 +114,14 @@ std::pair<double, double> ReadSamples(
   double time_read_small_sample =
       aqppp::Tool::get_percentile(read_small_sample_times, 0.5);
   return {time_read_sample, time_read_small_sample};
-}
+};
 
+// Output files include:
+// - parameters (same as loaded from input parameters file)
+// - info (timings and high-level statistics)
+// - results (query results)
 const int ComparisonExperiment::RunExperiment(
     SQLHANDLE& sql_connection_handle) {
-  // Output files include:
-  // - parameters (same as loaded from input parameters file)
-  // - info (timings and high-level statistics)
-  // - results (query results)
-
   // Setup
   double t_start = clock();
   Parameters PAR = LoadParameters();
@@ -101,7 +131,8 @@ const int ComparisonExperiment::RunExperiment(
   fopen_s(&info_file, (PAR.OUTPUT_PATH + "/info.txt").data(), "w");
   fopen_s(&results_file, (PAR.OUTPUT_PATH + "/results.txt").data(), "w");
 
-  // Generate sample database tables, load into memory and convery to CA sample
+  // Generate sample database tables, load into memory and generate a CA
+  // sample, which is used to generate the prefix cube.
   std::pair<double, double> time_samples_creation =
       aqppp::SqlInterface::CreateDbSamples(
           sql_connection_handle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME,
@@ -122,26 +153,32 @@ const int ComparisonExperiment::RunExperiment(
   // TODO investigate ReadQueriesFromFile
   // may need to extend to support different aggregations
   // Note that the queries are a vector of aqppp::Condition objects
+  std::vector<Query> queries;
+  int n_columns = sample[0].size();
+  ComparisonExperiment::LoadQueries(PAR.QUERIES_PATH, queries, n_columns)
 
-  // Generate prefix cube
-  // TODO currently this only works for SUM aggregations. In fact, the "sum"
-  // argument in GetPrefixSumCube doesn't actually do anything. Maybe I can
-  // extend that function to support other kinds of aggregations. It should be
-  // relatively simple if the function is already filtering the data for each
-  // cube. I would just need to add more aggregations functions. Possibly store
-  // a list of aggregation functions in settings/parameters. Note that more
-  // prefix cubes increase the storage requirement.
-  //
-  // how does it decide how large a sample to make and how big a prefix cube to
-  // make? Is there a given space budget at the start? Then it uses a
-  // hill-climbing optimisation approach to select the best partition scheme
-  // Outcome: prefix cube
-  double t_prefix_cube_start = clock();
+      // Generate prefix cube
+      // TODO currently this only works for SUM aggregations. In fact, the "sum"
+      // argument in GetPrefixSumCube doesn't actually do anything. Maybe I can
+      // extend that function to support other kinds of aggregations. It should
+      // be relatively simple if the function is already filtering the data for
+      // each cube. I would just need to add more aggregations functions.
+      // Possibly store a list of aggregation functions in settings/parameters.
+      // Note that more prefix cubes increase the storage requirement.
+      //
+      // how does it decide how large a sample to make and how big a prefix cube
+      // to make? Is there a given space budget at the start? Then it uses a
+      // hill-climbing optimisation approach to select the best partition scheme
+      // Outcome: prefix cube
+      double t_prefix_cube_start = clock();
   std::vector<std::vector<aqppp::CA>> NF_mtl_points;
   aqppp::MTL_STRU NF_mtl_res = aqppp::MTL_STRU();
   std::vector<int> mtl_nums;
   std::cout << "Start mtl..." << std::endl;
-  aqppp::AssignBudgetForDimensions(PAR, false).AssignBudget(CAsample, mtl_nums);
+  aqppp::AssignBudgetForDimensions(
+      PAR.SAMPLE_RATE, PAR.ALL_MTL_POINTS, PAR.EP_PIECE_NUM, PAR.SAMPLE_ROW_NUM,
+      PAR.CI_INDEX, PAR.NF_MAX_ITER, PAR.INIT_DISTINCT_EVEN, false)
+      .AssignBudget(CAsample, mtl_nums);
   NF_mtl_points = std::vector<std::vector<aqppp::CA>>();
   std::vector<double> max_errs;
   std::vector<int> iter_nums;
@@ -278,11 +315,11 @@ const int ComparisonExperiment::RunExperiment(
   // They claim that it can be adapted for COUNT and AVERAGE queries easily.
   // (Possibly take the same approach as DeepDB by computing the sum and count
   // queries and using these to compute the average. I think DeepDB did count
-  // and average and then derived sum.) Actually, they do have some suggestions
-  // in the paper, including creating a summy column for count queries... maybe
-  // this can be done better... They note that creating a prefix cube for these
-  // is a bit more complex and give an explanation for each... which I probably
-  // need to implement.
+  // and average and then derived sum.) Actually, they do have some
+  // suggestions in the paper, including creating a summy column for count
+  // queries... maybe this can be done better... They note that creating a
+  // prefix cube for these is a bit more complex and give an explanation for
+  // each... which I probably need to implement.
 
   fclose(info_file);
   std::cout << "Comparison experiment completed." << std::endl;

@@ -80,7 +80,7 @@ namespace aqppp {
 	}
 
 	// Get column names for a given table and organise them into numerical and categorical
-	SqlInterface::TableColumns SqlInterface::GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name)
+	const SqlInterface::TableColumns SqlInterface::GetTableColumns(SQLHANDLE& sqlConnectionHandle, std::string table_name)
 	{
 		TableColumns results;
 		SQLWCHAR buf_name[128];

@@ -6,16 +6,18 @@
 
 namespace aqppp
 {
-	AssignBudgetForDimensions::AssignBudgetForDimensions(Settings settings, bool uniform)
-	{
-		this->PAR.SAMPLE_RATE = settings.SAMPLE_RATE;
+	AssignBudgetForDimensions::AssignBudgetForDimensions(
+			double SAMPLE_RATE, int ALL_MTL_POINTS, int EP_PIECE_NUM,
+			int SAMPLE_ROW_NUM, double CI_INDEX, int NF_MAX_ITER,
+			bool INIT_DISTINCT_EVEN, bool uniform) {
+		this->PAR.SAMPLE_RATE = SAMPLE_RATE;
+		this->PAR.ALL_MTL_POINTS = ALL_MTL_POINTS;
+		this->PAR.PIECE_NUM = EP_PIECE_NUM;
+		this->PAR.SAMPLE_ROW_NUM = SAMPLE_ROW_NUM;
+		this->PAR.CI_INDEX = CI_INDEX;
+		this->PAR.CLIMB_MAX_ITER = NF_MAX_ITER;
+		this->PAR.CLIMB_INIT_DISTINCT_EVEN = INIT_DISTINCT_EVEN;
 		this->PAR.UNIFORM = uniform;
-		this->PAR.ALL_MTL_POINTS = settings.ALL_MTL_POINTS;
-		this->PAR.PIECE_NUM = settings.EP_PIECE_NUM;
-		this->PAR.SAMPLE_ROW_NUM = settings.SAMPLE_ROW_NUM;
-		this->PAR.CI_INDEX = settings.CI_INDEX;
-		this->PAR.CLIMB_MAX_ITER = settings.NF_MAX_ITER;
-		this->PAR.CLIMB_INIT_DISTINCT_EVEN = settings.INIT_DISTINCT_EVEN;
 	}
 
 	void AssignBudgetForDimensions::AssignBudget(const std::vector<std::vector<CA>> &casample, std::vector<int> &o_MTL_dist_result, int ADJUST_WAY)

@@ -23,7 +23,10 @@ namespace aqppp
 		} PAR;
 
 	public:
-		AssignBudgetForDimensions(Settings settings, bool uniform);
+  		AssignBudgetForDimensions(double SAMPLE_RATE, int ALL_MTL_POINTS,
+								  int EP_PIECE_NUM, int SAMPLE_ROW_NUM,
+								  double CI_INDEX, int NF_MAX_ITER,
+								  bool INIT_DISTINCT_EVEN, bool uniform);
 
 		struct Point
 		{

@@ -13,7 +13,7 @@
 namespace exp_comparison {
 class ComparisonExperiment {
  public:
-  const struct Parameters {
+  struct Parameters {
     std::string DATASET_NAME = "uci_household_power_consumption";
     std::string DB_NAME = "uci_household_power_consumption";
     std::string TABLE_NAME = "household_power_consumption";
@@ -58,5 +58,6 @@ class ComparisonExperiment {
                              std::vector<std::vector<double>>& o_table,
                              const std::string db_name,
                              const std::string table_name);
+  static void WriteParameters(FILE* fp, Parameters par);
 };
 }  // namespace exp_comparison

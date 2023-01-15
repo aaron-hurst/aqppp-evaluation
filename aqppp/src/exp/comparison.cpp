@@ -116,6 +116,31 @@ const std::pair<double, double> ComparisonExperiment::ReadSamples(
   return {time_read_sample, time_read_small_sample};
 };
 
+void ComparisonExperiment::WriteParameters(
+    FILE* fp, ComparisonExperiment::Parameters par) {
+  fprintf(fp, "---- Databases & files -----\n");
+  fprintf(fp, "DATASET_NAME       %s\n", par.DATASET_NAME.c_str());
+  fprintf(fp, "DB_NAME            %s\n", par.DB_NAME.c_str());
+  fprintf(fp, "TABLE_NAME         %s\n", par.TABLE_NAME.c_str());
+  fprintf(fp, "SAMPLE_NAME        %s\n", par.SAMPLE_NAME.c_str());
+  fprintf(fp, "SUB_SAMPLE_NAME    %s\n", par.SUB_SAMPLE_NAME.c_str());
+  fprintf(fp, "QUERIES_FILENAME   %s\n", par.QUERIES_FILENAME.c_str());
+  fprintf(fp, "OUTPUT_PATH        %s\n", par.OUTPUT_PATH.c_str());
+  fprintf(fp, "QUERIES_PATH       %s\n", par.QUERIES_PATH.c_str());
+
+  fprintf(fp, "---- Sampling & queries ----\n");
+  fprintf(fp, "SAMPLE_RATE        %f\n", par.SAMPLE_RATE);
+  fprintf(fp, "SUB_SAMPLE_RATE    %f\n", par.SUB_SAMPLE_RATE);
+  fprintf(fp, "RAND_SEED          %f\n", par.RAND_SEED);
+  fprintf(fp, "CI_INDEX           %f\n", par.CI_INDEX);
+  fprintf(fp, "SAMPLE_ROW_NUM     %f\n", par.SAMPLE_ROW_NUM);
+  fprintf(fp, "NF_MAX_ITER        %f\n", par.NF_MAX_ITER);
+  fprintf(fp, "INIT_DISTINCT_EVEN %f\n", par.INIT_DISTINCT_EVEN);
+  fprintf(fp, "ALL_MTL_POINTS     %i\n", par.ALL_MTL_POINTS);
+  fprintf(fp, "EP_PIECE_NUM       %i\n", par.EP_PIECE_NUM);
+  fprintf(fp, "----------------------------\n");
+}
+
 // Output files include:
 // - parameters (same as loaded from input parameters file)
 // - info (timings and high-level statistics)
@@ -124,12 +149,16 @@ const int ComparisonExperiment::RunExperiment(
     SQLHANDLE& sql_connection_handle) {
   // Setup
   double t_start = clock();
-  Parameters PAR = LoadParameters();
+  ComparisonExperiment::Parameters PAR = LoadParameters();
   FILE *parameters_file, *info_file, *results_file;
   aqppp::Tool::MkDirRecursively(PAR.OUTPUT_PATH);  // ensure output path exists
   fopen_s(&parameters_file, (PAR.OUTPUT_PATH + "/parameters.txt").data(), "w");
   fopen_s(&info_file, (PAR.OUTPUT_PATH + "/info.txt").data(), "w");
   fopen_s(&results_file, (PAR.OUTPUT_PATH + "/results.txt").data(), "w");
+
+  // Export parameters
+  ComparisonExperiment::WriteParameters(parameters_file, PAR);
+  fclose(parameters_file);
 
   // Generate sample database tables, load into memory and generate a CA
   // sample, which is used to generate the prefix cube.
@@ -150,27 +179,24 @@ const int ComparisonExperiment::RunExperiment(
   time_transform_sample = (clock() - time_transform_sample) / CLOCKS_PER_SEC;
 
   // Load queries
-  // TODO investigate ReadQueriesFromFile
-  // may need to extend to support different aggregations
-  // Note that the queries are a vector of aqppp::Condition objects
   std::vector<Query> queries;
   int n_columns = sample[0].size();
-  ComparisonExperiment::LoadQueries(PAR.QUERIES_PATH, queries, n_columns)
+  ComparisonExperiment::LoadQueries(PAR.QUERIES_PATH, queries, n_columns);
 
-      // Generate prefix cube
-      // TODO currently this only works for SUM aggregations. In fact, the "sum"
-      // argument in GetPrefixSumCube doesn't actually do anything. Maybe I can
-      // extend that function to support other kinds of aggregations. It should
-      // be relatively simple if the function is already filtering the data for
-      // each cube. I would just need to add more aggregations functions.
-      // Possibly store a list of aggregation functions in settings/parameters.
-      // Note that more prefix cubes increase the storage requirement.
-      //
-      // how does it decide how large a sample to make and how big a prefix cube
-      // to make? Is there a given space budget at the start? Then it uses a
-      // hill-climbing optimisation approach to select the best partition scheme
-      // Outcome: prefix cube
-      double t_prefix_cube_start = clock();
+  // Generate prefix cube
+  // TODO currently this only works for SUM aggregations. In fact, the "sum"
+  // argument in GetPrefixSumCube doesn't actually do anything. Maybe I can
+  // extend that function to support other kinds of aggregations. It should
+  // be relatively simple if the function is already filtering the data for
+  // each cube. I would just need to add more aggregations functions.
+  // Possibly store a list of aggregation functions in settings/parameters.
+  // Note that more prefix cubes increase the storage requirement.
+  //
+  // how does it decide how large a sample to make and how big a prefix cube
+  // to make? Is there a given space budget at the start? Then it uses a
+  // hill-climbing optimisation approach to select the best partition scheme
+  // Outcome: prefix cube
+  double t_prefix_cube_start = clock();
   std::vector<std::vector<aqppp::CA>> NF_mtl_points;
   aqppp::MTL_STRU NF_mtl_res = aqppp::MTL_STRU();
   std::vector<int> mtl_nums;
@@ -304,12 +330,6 @@ const int ComparisonExperiment::RunExperiment(
   fprintf(info_file, "99th percentile AQP++:	  %f%%\n",
           100 * error_aqppp_99p);
   fprintf(info_file, "\n");
-
-  // TODO export parameters... may need new function
-  // Parameters file:
-  // WritePar(par_file, PAR);
-  // WriteExpPar(par_file, exp_par);
-  // fclose(par_file);
 
   // NOTE: according to the paper, they present only SUM queries.
   // They claim that it can be adapted for COUNT and AVERAGE queries easily.

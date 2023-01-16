@@ -63,7 +63,7 @@ namespace aqppp {
 		std::wstring wquery = std::wstring(query.begin(), query.end());
 		//SQLWCHAR wq[10000] = {};
 		WCHAR* wq = const_cast<WCHAR*>(wquery.c_str());
-		std::wcout << "sql_query: " << wquery << std::endl;
+		std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
 		if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle,wq, SQL_NTS))
 		{
 			ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
@@ -182,13 +182,13 @@ namespace aqppp {
 		if (SQLAllocHandle(SQL_HANDLE_STMT, sqlconnectionhandle, &sqlstatementhandle) != SQL_SUCCESS) return -1;
 		std::string sample_full_name = db_name + "." + sample_name;
 		std::string table_full_name = db_name + "." + table_name;
-		std::string drop_sample = "IF OBJECT_ID('" + sample_full_name + "', 'U') IS NOT NULL DROP TABLE " + sample_full_name + "; ";
+		std::string drop_sample = "IF OBJECT_ID('" + sample_full_name + "', 'U') IS NOT NULL DROP TABLE " + sample_full_name + ";";
 		std::string create_sample = "SELECT * INTO " + sample_full_name + " FROM " + table_full_name + " WHERE " + ComputeRandStr(sqlconnectionhandle, table_name, seed, sample_rate) + ";";
 		std::string create_sample_cstore_indx = "CREATE CLUSTERED COLUMNSTORE INDEX cci_"+sample_name+" ON " + sample_full_name + ";";
 		std::cout << "Setting up sample database tables" << std::endl;
-		std::cout << drop_sample << std::endl;
-		std::cout << create_sample << std::endl;
-		std::cout << create_sample_cstore_indx << std::endl;
+		std::cout << "Query to drop existing table: \n\t" << drop_sample << std::endl;
+		std::cout << "Query to create new table: \n\t" << create_sample << std::endl;
+		std::cout << "Query to create ??: \n\t" << create_sample_cstore_indx << std::endl;
 
 		SqlQuery(drop_sample, sqlstatementhandle);
 		double t1 = clock();

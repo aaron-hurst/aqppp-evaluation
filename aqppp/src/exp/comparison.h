@@ -14,12 +14,15 @@ namespace exp_comparison {
 class ComparisonExperiment {
  public:
   struct Parameters {
-    std::string DATASET_NAME = "uci_household_power_consumption";
-    std::string DB_NAME = "uci_household_power_consumption";
+    std::string DATASET_NAME = "uci-household_power_consumption";
+    std::string DB_NAME = "uci_household_power_consumption.dbo";
     std::string TABLE_NAME = "household_power_consumption";
-    std::string SAMPLE_NAME = "uci_household_power_consumption_sample";
-    std::string SUB_SAMPLE_NAME = "uci_household_power_consumption_sub_sample";
+    std::string SAMPLE_NAME = "household_power_consumption_sample";
+    std::string SUB_SAMPLE_NAME = "household_power_consumption_sub_sample";
     std::string QUERIES_FILENAME = "uci-household_power_consumption-N=100.csv";
+    std::string QUERIES_BASE_PATH =
+        "C:/Users/au686379/OneDrive - Aarhus Universitet/Documents/04 "
+        "Research/queries";
     std::string OUTPUT_PATH;
     std::string QUERIES_PATH;
     double SAMPLE_RATE = 0.01;
@@ -46,7 +49,7 @@ class ComparisonExperiment {
 
   static const Parameters LoadParameters(void);
   static const int LoadQueries(const std::string query_filepath,
-                               std::vector<Query> o_queries,
+                               std::vector<Query>& o_queries,
                                const int n_columns);
   static const std::pair<double, double> ReadSamples(
       SQLHANDLE& sql_connection_handle, const std::string db_name,

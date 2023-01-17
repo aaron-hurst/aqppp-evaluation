@@ -12,6 +12,11 @@ namespace aqppp {
 			std::wcout << "Message: " << message << "\nSQLSTATE: " << sqlstate << std::endl;
 	}
 
+	void SqlInterface::ShowError(unsigned int handle_type, const SQLHANDLE& handle, const std::string query_str)
+	{
+		std::cout << "Error occurred while executing SQL query: " << query_str << std::endl;
+		SqlInterface::ShowError(handle_type, handle);
+	}
 
 	void SqlInterface::MakeSqlConnection(std::string odbc_name, std::string user_name, std::string pwd, SQLHANDLE &sqlconnectionhandle)
 	{
@@ -63,7 +68,7 @@ namespace aqppp {
 		std::wstring wquery = std::wstring(query.begin(), query.end());
 		//SQLWCHAR wq[10000] = {};
 		WCHAR* wq = const_cast<WCHAR*>(wquery.c_str());
-		std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
+		//std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
 		if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle,wq, SQL_NTS))
 		{
 			ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
@@ -139,6 +144,7 @@ namespace aqppp {
 					else {
 						results.categorical_columns.push_back(column_name);
 					}
+					results.all_columns.push_back(column_name);
 
 					// Get next row from query
 					rc = SQLFetch(h_stmt);

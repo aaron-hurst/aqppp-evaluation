@@ -5,7 +5,7 @@
 
 namespace aqppp {
 
-	Precompute::Precompute(std::string db_name, std::string table_name, std::string agg_name, std::vector<std::string> condition_names)
+	Precompute::Precompute(std::string db_name, std::string table_name, std::string agg_name, std::unordered_set<std::string> condition_names)
 	{
 		this->PAR.DB_NAME = db_name;
 		this->PAR.AGGREGATE_NAME = agg_name;
@@ -13,11 +13,11 @@ namespace aqppp {
 		this->PAR.TABLE_NAME = table_name;
 	}
 
-	double Precompute::GetPrefixSumCube(const std::vector<std::vector<CA>>& mtl_points, SQLHANDLE &sqlconnectionhandle, MTL_STRU & o_mtl_res, std::string query_type, const DistId &distinct_ids)
+	double Precompute::GetPrefixSumCube(const std::vector<std::vector<CA>>& mtl_points, SQLHANDLE& sqlconnectionhandle, MTL_STRU& o_mtl_res, std::string query_type, const DistId& distinct_ids)
 	{
 		MTL_STRU mtl_data = MTL_STRU();
 		double t10 = clock();
-		ComputeDataCube(mtl_points, sqlconnectionhandle, mtl_data, query_type, distinct_ids);
+		Precompute::ComputeDataCube(mtl_points, sqlconnectionhandle, mtl_data, query_type, distinct_ids);
 		double mtl_data_time = (clock() - t10) / CLOCKS_PER_SEC;
 		if (mtl_data.size() == 0) 
 		{
@@ -92,12 +92,12 @@ namespace aqppp {
 		return l;
 	}
 
-	void  Precompute::ReadColumnOneThread(SQLHANDLE &sqlstatementhandle)
+	void Precompute::ReadColumnOneThread(SQLHANDLE &sqlstatementhandle)
 	{
 		SQLFetch(sqlstatementhandle);
 	}
 
-	void  Precompute::ComputeDataCubeOneThread(int thread_id, int start_row, int end_row, int CONDITION_DIM, const std::vector<std::vector<CA>> &mtl_points, double(&table)[11][1000000], std::vector<double>& cube, std::vector<int>& cube_sizes, std::vector<std::mutex>& cube_locks)
+	void Precompute::ComputeDataCubeOneThread(int thread_id, int start_row, int end_row, int CONDITION_DIM, const std::vector<std::vector<CA>> &mtl_points, double(&table)[11][1000000], std::vector<double>& cube, std::vector<int>& cube_sizes, std::vector<std::mutex>& cube_locks)
 	{
 		std::vector<int> pos = std::vector<int>(CONDITION_DIM);
 		//cout << GetCurrentProcessorNumber() << endl;
@@ -122,6 +122,7 @@ namespace aqppp {
 		}
 	}
 
+	// TODO This function always caues a stack overflow due to the size of the table variable.
 	double Precompute::ComputeDataCube(const std::vector<std::vector<CA>>& mtl_points, SQLHANDLE &sqlconnectionhandle, MTL_STRU& o_mtl_data, std::string query_type, const DistId &distinct_ids)
 	{
 		double start_time = clock();
@@ -165,9 +166,10 @@ namespace aqppp {
 		for (int ci = 0; ci < CONDITION_DIM + 1; ci++)
 		{
 			SqlInterface::SqlQuery(queries[ci], vec_sqlstatementhandle[ci]);
-			std::cout << queries[ci] << std::endl << std::endl;
+			std::cout << "Query for computing data cube:\n" << queries[ci] << std::endl << std::endl;
 			SQLSetStmtAttr(vec_sqlstatementhandle[ci], SQL_ROWSET_SIZE, (void*)BATCH_ROW_NUM, 0);	
-			SQLBindCol(vec_sqlstatementhandle[ci],                 // Statement handle
+			SQLBindCol(
+				vec_sqlstatementhandle[ci],     // Statement handle
 				1,                    // Column number
 				SQL_C_DOUBLE,      // C Data Type
 				table[ci],          // Data buffer
@@ -186,7 +188,7 @@ namespace aqppp {
 		while (SQLFetch(vec_sqlstatementhandle[0]) == SQL_SUCCESS)
 		{
 			for (int ci = 1; ci < CONDITION_DIM+1; ci++) {
-				threads_for_read[ci-1] = std::thread(&Precompute::ReadColumnOneThread,std::ref(vec_sqlstatementhandle[ci]));
+				threads_for_read[ci-1] = std::thread(&Precompute::ReadColumnOneThread, std::ref(vec_sqlstatementhandle[ci]));
 			}
 			for (auto& th : threads_for_read) {
 				th.join();
@@ -232,10 +234,6 @@ namespace aqppp {
 
 		return run_time;
 	}
-
-
-
-
 
 	//cur_ind need to be init as a vector of len=dimensions outside
 	//o_mtl_res=mtl_data outside.

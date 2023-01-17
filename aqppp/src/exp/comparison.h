@@ -25,21 +25,17 @@ class ComparisonExperiment {
         "Research/queries";
     std::string OUTPUT_PATH;
     std::string QUERIES_PATH;
+    double N_COLUMNS = -1;
+    int SAMPLE_ROW_NUM = -1;
     double SAMPLE_RATE = 0.01;
     double SUB_SAMPLE_RATE = 0.1;
     double RAND_SEED = 1;
     double CI_INDEX = 1.96;
-    double SAMPLE_ROW_NUM = -1;
     double NF_MAX_ITER = 1000;
     bool INIT_DISTINCT_EVEN = false;
+    bool isMTL = false;
     int ALL_MTL_POINTS = 50000;
     int EP_PIECE_NUM = 20;
-  };
-  struct Query {
-    int aggregate_column;
-    std::string aggregation;
-    std::vector<int> condition_columns;
-    std::vector<aqppp::Condition> conditions;
   };
 
   static const int RunExperiment(SQLHANDLE& sqlconnectionhandle);
@@ -49,7 +45,7 @@ class ComparisonExperiment {
 
   static const Parameters LoadParameters(void);
   static const int LoadQueries(const std::string query_filepath,
-                               std::vector<Query>& o_queries,
+                               std::vector<aqppp::Query>& o_queries,
                                const int n_columns);
   static const std::pair<double, double> ReadSamples(
       SQLHANDLE& sql_connection_handle, const std::string db_name,

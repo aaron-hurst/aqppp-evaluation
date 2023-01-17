@@ -16,12 +16,12 @@ namespace aqppp {
 		std::vector<RGs> all_rgs = std::vector<RGs>();
 		GenAllRanges(mtl_points, user_demands, all_rgs);
 
-		//in case cannot find mtl range related to user query.
+		// In case cannot find mtl range related to user query.
 		for (int i = 0; i < all_rgs.size(); i++)
 		{
 			if (all_rgs[i].size() < 1)
 			{
-				fprintf(info_file, "cannot gen rg, and return sampling result. query_id:%d conditions:", query_id);
+				fprintf(info_file, "cannot gen rg, and return sampling result. query_id: %d conditions: ", query_id);
 				for (auto ele : user_demands)
 				{
 					fprintf(info_file, "(%f,%f) ", ele.lb, ele.ub);
@@ -35,9 +35,7 @@ namespace aqppp {
 		std::vector<Condition> final_mtl_choices = std::vector<Condition>();
 		double min_ci = FLT_MAX;
 
-
 		FillMaterializeChoices(0, small_sample, all_rgs, user_demands, min_ci, mtl_choices, final_mtl_choices);
-
 		
 		std::vector<std::pair<double, double>> final_diff_res = std::vector<std::pair<double, double>>();
 		FinalComputeDifference(sample, user_demands, final_mtl_choices, final_diff_res);
@@ -341,7 +339,5 @@ namespace aqppp {
 			FillMaterializeChoices(col + 1, small_sample, all_rgs, user_demands, o_min_ci, mtl_choices, final_mtl_choices);
 		}
 	}
-
-
 }
 

@@ -35,6 +35,12 @@ namespace aqppp {
 		double lb = 0.0, ub = 0.0;
 		int lb_id = 0, ub_id = 0;
 	};
+	struct Query {
+		int aggregate_column;
+		std::string aggregation;
+		std::vector<int> condition_columns;
+		std::vector<Condition> conditions;
+	};
 	std::ostream& operator << (std::ostream& os, const Condition& rhs);
 
 	struct CA {

@@ -29,12 +29,9 @@ const double ComparisonExperiment::ReadDB(
   o_table = std::vector<std::vector<double>>();
 
   // Get table column names
-  aqppp::SqlInterface::TableColumns table_columns =
-      aqppp::SqlInterface::GetTableColumns(sql_connection_handle, table_name);
-  std::vector<std::string> column_names = table_columns.numeric_columns;
-  column_names.insert(column_names.end(),
-                      table_columns.categorical_columns.begin(),
-                      table_columns.categorical_columns.end());
+  std::vector<std::string> column_names =
+      aqppp::SqlInterface::GetTableColumns(sql_connection_handle, table_name)
+          .all_columns;
   short int n_columns = column_names.size();
 
   // Define query
@@ -64,11 +61,11 @@ const double ComparisonExperiment::ReadDB(
 
 // Load queries
 const int ComparisonExperiment::LoadQueries(
-    const std::string query_filepath,
-    std::vector<ComparisonExperiment::Query>& o_queries, const int n_columns) {
+    const std::string query_filepath, std::vector<aqppp::Query>& o_queries,
+    const int n_columns) {
   std::ifstream query_file(query_filepath);
   std::string line;
-  o_queries = std::vector<ComparisonExperiment::Query>();  // init empty
+  o_queries = std::vector<aqppp::Query>();  // init empty
   if (query_file.is_open()) {
     std::getline(query_file, line);  // skip first line (headers)
     while (std::getline(query_file, line)) {
@@ -89,7 +86,7 @@ const int ComparisonExperiment::LoadQueries(
           aqppp::Condition condition;
           condition.lb = bound_low;
           condition.ub = bound_high;
-          ComparisonExperiment::Query query = {
+          aqppp::Query query = {
               agg_col_id, aggregation, {condition_column_id}, {condition}};
           o_queries.push_back(query);
         }
@@ -146,7 +143,7 @@ void ComparisonExperiment::WriteParameters(
   fprintf(fp, "CI_INDEX            %.3f\n", par.CI_INDEX);
   fprintf(fp, "SAMPLE_ROW_NUM      %.3f\n", par.SAMPLE_ROW_NUM);
   fprintf(fp, "NF_MAX_ITER         %.3f\n", par.NF_MAX_ITER);
-  fprintf(fp, "INIT_DISTINCT_EVEN  %.3f\n", par.INIT_DISTINCT_EVEN);
+  fprintf(fp, "INIT_DISTINCT_EVEN  %i\n", par.INIT_DISTINCT_EVEN);
   fprintf(fp, "ALL_MTL_POINTS      %i\n", par.ALL_MTL_POINTS);
   fprintf(fp, "EP_PIECE_NUM        %i\n", par.EP_PIECE_NUM);
   fprintf(fp, "----------------------------\n");
@@ -161,18 +158,18 @@ const int ComparisonExperiment::RunExperiment(
   // Setup
   double t_start = clock();
   ComparisonExperiment::Parameters PAR = LoadParameters();
-  FILE *parameters_file, *info_file, *results_file;
+  FILE *parameters_file, *info_file, *results_file, *log_file;
   aqppp::Tool::MkDirRecursively(PAR.OUTPUT_PATH);  // ensure output path exists
   fopen_s(&parameters_file, (PAR.OUTPUT_PATH + "/parameters.txt").data(), "w");
   fopen_s(&info_file, (PAR.OUTPUT_PATH + "/info.txt").data(), "w");
   fopen_s(&results_file, (PAR.OUTPUT_PATH + "/results.txt").data(), "w");
+  fopen_s(&log_file, (PAR.OUTPUT_PATH + "/log.txt").data(), "w");
 
   // Export parameters
   ComparisonExperiment::WriteParameters(parameters_file, PAR);
   fclose(parameters_file);
 
-  // Generate sample database tables, load into memory and generate a CA
-  // sample, which is used to generate the prefix cube.
+  // Generate sample database tables and load into memory
   std::pair<double, double> time_samples_creation =
       aqppp::SqlInterface::CreateDbSamples(
           sql_connection_handle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME,
@@ -184,16 +181,11 @@ const int ComparisonExperiment::RunExperiment(
       ReadSamples(sql_connection_handle, PAR.DB_NAME, PAR.SAMPLE_NAME,
                   PAR.SUB_SAMPLE_NAME, sample, small_sample);
   PAR.SAMPLE_ROW_NUM = sample[0].size();
-  double time_transform_sample = clock();
-  std::vector<std::vector<aqppp::CA>> CAsample =
-      std::vector<std::vector<aqppp::CA>>();
-  aqppp::Tool::TransSample(sample, CAsample);
-  time_transform_sample = (clock() - time_transform_sample) / CLOCKS_PER_SEC;
+  PAR.N_COLUMNS = sample.size();
 
   // Load queries
-  std::vector<Query> queries;
-  int n_columns = sample.size();
-  ComparisonExperiment::LoadQueries(PAR.QUERIES_PATH, queries, n_columns);
+  std::vector<aqppp::Query> queries;
+  ComparisonExperiment::LoadQueries(PAR.QUERIES_PATH, queries, PAR.N_COLUMNS);
 
   // Generate prefix cube
   // TODO currently this only works for SUM aggregations. In fact, the "sum"
@@ -208,29 +200,77 @@ const int ComparisonExperiment::RunExperiment(
   // to make? Is there a given space budget at the start? Then it uses a
   // hill-climbing optimisation approach to select the best partition scheme
   // Outcome: prefix cube
-  double t_prefix_cube_start = clock();
-  std::vector<std::vector<aqppp::CA>> NF_mtl_points;
-  aqppp::MTL_STRU NF_mtl_res = aqppp::MTL_STRU();
-  std::vector<int> mtl_nums;
-  std::cout << "Start mtl..." << std::endl;
-  aqppp::AssignBudgetForDimensions(
-      PAR.SAMPLE_RATE, PAR.ALL_MTL_POINTS, PAR.EP_PIECE_NUM, PAR.SAMPLE_ROW_NUM,
-      PAR.CI_INDEX, PAR.NF_MAX_ITER, PAR.INIT_DISTINCT_EVEN, false)
-      .AssignBudget(CAsample, mtl_nums);
-  NF_mtl_points = std::vector<std::vector<aqppp::CA>>();
-  std::vector<double> max_errs;
-  std::vector<int> iter_nums;
-  aqppp::HillClimbing(PAR.SAMPLE_ROW_NUM, PAR.SAMPLE_RATE, PAR.CI_INDEX,
-                      PAR.NF_MAX_ITER, PAR.INIT_DISTINCT_EVEN)
-      .ChoosePoints(CAsample, mtl_nums, NF_mtl_points, max_errs, iter_nums);
-  double time_prefix_cube_prepare =
-      (clock() - t_prefix_cube_start) / CLOCKS_PER_SEC;
+
+  // CAsample is diferent for each aggregation column
+
+  // iterate over all columns (aggregation columns)
+  // compute CA sample (temporary, only needed while creating the prefix cube)
+  // assign budget using the CAsample and mtl_nums (also only used inside this
+  // loop) hill climbing to choose NF_mtl_points (where to set the boundaries in
+  // the cube) precompute
+
+  // thus, maybe I don't need d^2 prefix cubes and instead only d
+  // this will work if I can just omit conditions on all but one dimension
+  // when it comes to queries
+
+  // Compute prefix cubes for AQP. A unique cube is computed for each possible
+  // aggregation column. The resulting cubes and resolutions are stored in
+  // vectors defined below, which are later accessed for running queries.
+  double time_transform_sample = 0;
+  double time_prefix_cube_prepare = 0;
   double time_prefix_cube_compute = 0;
-  // double time_prefix_cube_compute =
-  //     aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, PAR.AGGREGATE_NAME,
-  //                       PAR.CONDITION_NAMES)
-  //         .GetPrefixSumCube(NF_mtl_points, sql_connection_handle, NF_mtl_res,
-  //                           "sum");
+  std::vector<std::vector<std::vector<aqppp::CA>>> NF_mtl_points_all;
+  std::vector<aqppp::MTL_STRU> NF_mtl_res_all;
+  std::vector<std::string> column_names =
+      aqppp::SqlInterface::GetTableColumns(sql_connection_handle,
+                                           PAR.TABLE_NAME)
+          .all_columns;
+  for (int agg_col_id = 0; agg_col_id < PAR.N_COLUMNS; agg_col_id++) {
+    // Compute CAsample (only needed for computing the prefix cube)
+    double t_trans_start = clock();
+    std::vector<std::vector<aqppp::CA>> CAsample =
+        std::vector<std::vector<aqppp::CA>>();
+    aqppp::Tool::TransSample(sample, CAsample, agg_col_id);
+    time_transform_sample += (clock() - t_trans_start) / CLOCKS_PER_SEC;
+
+    // Allocate space budget for prefix cube
+    double t_prepare_start = clock();
+    std::vector<int> mtl_nums;
+    aqppp::AssignBudgetForDimensions(PAR.SAMPLE_RATE, PAR.ALL_MTL_POINTS,
+                                     PAR.EP_PIECE_NUM, PAR.SAMPLE_ROW_NUM,
+                                     PAR.CI_INDEX, PAR.NF_MAX_ITER,
+                                     PAR.INIT_DISTINCT_EVEN, false)
+        .AssignBudget(CAsample, mtl_nums);
+
+    // Select the critical points for the prefix cube
+    std::vector<std::vector<aqppp::CA>> NF_mtl_points =
+        std::vector<std::vector<aqppp::CA>>();
+    std::vector<double> max_errs;
+    std::vector<int> iter_nums;
+    aqppp::HillClimbing(PAR.SAMPLE_ROW_NUM, PAR.SAMPLE_RATE, PAR.CI_INDEX,
+                        PAR.NF_MAX_ITER, PAR.INIT_DISTINCT_EVEN)
+        .ChoosePoints(CAsample, mtl_nums, NF_mtl_points, max_errs, iter_nums);
+    time_prefix_cube_prepare += (clock() - t_prepare_start) / CLOCKS_PER_SEC;
+
+    // Compute prefix cube
+    std::string aggregate_column = column_names[agg_col_id];
+    std::unordered_set<std::string> condition_columns(column_names.begin(),
+                                                      column_names.end());
+    condition_columns.erase(aggregate_column);
+    aqppp::MTL_STRU NF_mtl_res = aqppp::MTL_STRU();
+    // This is not used in the "comprehensive experiment".
+    if (PAR.isMTL) {
+      time_prefix_cube_compute +=
+          aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, aggregate_column,
+                            condition_columns)
+              .GetPrefixSumCube(NF_mtl_points, sql_connection_handle,
+                                NF_mtl_res, "sum");
+    }
+
+    // Record prefix cube
+    NF_mtl_res_all.push_back(NF_mtl_res);
+    NF_mtl_points_all.push_back(NF_mtl_points);
+  }
 
   // Evaluate queries
   // TODO support additional aggregations
@@ -293,6 +333,7 @@ const int ComparisonExperiment::RunExperiment(
     n_queries_completed++;
   }
   fclose(results_file);
+  fclose(log_file);
 
   // Export everything
   double error_sampling_mean = aqppp::Tool::get_avg(errors_sampling);

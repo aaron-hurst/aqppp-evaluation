@@ -1,16 +1,15 @@
 #pragma once
-#include<unordered_map>
-//#include <mysql.h>
-#include<algorithm>
-#include"common_content.h"
-#include"sql_interface.h"
-#include "tool.h"
-#include "precompute.h"
-#include"sampling.h"
-#include"hill_climbing.h"
+#include <algorithm>
 #include <cstdio>
-#include<iostream>
-#include<vector>
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+#include "common_content.h"
+#include "hill_climbing.h"
+#include "sampling.h"
+#include "sql_interface.h"
+#include "tool.h"
 
 namespace aqppp {
 	class Aqpp {

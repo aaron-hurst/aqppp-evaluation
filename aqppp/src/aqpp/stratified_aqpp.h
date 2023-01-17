@@ -4,7 +4,6 @@
 #include"common_content.h"
 #include"sql_interface.h"
 #include "tool.h"
-#include "precompute.h"
 #include"stratified_sampling.h"
 #include <cstdio>
 #include<iostream>

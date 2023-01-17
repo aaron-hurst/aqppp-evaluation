@@ -158,15 +158,16 @@ namespace expDemo {
 				std::vector<int> iter_nums;
 				aqppp::HillClimbing(PAR.SAMPLE_ROW_NUM, PAR.SAMPLE_RATE, PAR.CI_INDEX, PAR.NF_MAX_ITER, PAR.INIT_DISTINCT_EVEN).ChoosePoints(CAsample, mtl_nums, NF_mtl_points, max_errs, iter_nums);
 				double time_NF_find_mtl_point = (clock() - t2) / CLOCKS_PER_SEC;
-				fprintf(info_file, "sample size: %d\n", sample[0].size());
+				fprintf(info_file, "sample size: %i\n", sample[0].size());
 				for (int i = 0;i < CAsample.size();i++)
 				{
 					std::cout << "dim:" << i << " mtl_num:" << mtl_nums[i] << std::endl;
-					fprintf(info_file, "dim:%d\tdistinct_value:%d\tmtl_num:%d\tmax_err:%f\tclimb_iter_num:%d\n", i, CAsample[i].size(), mtl_nums[i], max_errs[i], iter_nums[i]);
+					fprintf(info_file, "dim:%d\tdistinct_value:%i\tmtl_num:%d\tmax_err:%f\tclimb_iter_num:%d\n", i, CAsample[i].size(), mtl_nums[i], max_errs[i], iter_nums[i]);
 				}
 				
 				double time_NF_mtl_res = 0;
-				if (exp_par.isMTL == true) time_NF_mtl_res=aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, PAR.AGGREGATE_NAME, PAR.CONDITION_NAMES).GetPrefixSumCube(NF_mtl_points, sqlconnectionhandle, NF_mtl_res, "sum");
+				std::unordered_set<std::string> condition_columns(PAR.CONDITION_NAMES.begin(), PAR.CONDITION_NAMES.end());
+				if (exp_par.isMTL) time_NF_mtl_res = aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, PAR.AGGREGATE_NAME, condition_columns).GetPrefixSumCube(NF_mtl_points, sqlconnectionhandle, NF_mtl_res, "sum");
 			/*-------------------------------------------------------------------*/
 
 
@@ -249,7 +250,7 @@ namespace expDemo {
 			double tot_time = ((double)clock() - bt) / CLOCKS_PER_SEC;
 
 			fprintf(info_file, "\n");
-			fprintf(info_file, "gen query_num: %d\n", user_queries.size());
+			fprintf(info_file, "gen query_num: %i\n", user_queries.size());
 			fprintf(info_file, "real query_num: %d\n", (int)counter);
 			fprintf(info_file, "sampling offline time: %f\n", time_spl_offline);
 			fprintf(info_file, "NF hybird offline time: %f\n", time_NF_hybrid_offline);

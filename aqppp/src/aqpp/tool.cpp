@@ -159,7 +159,6 @@ namespace aqppp
 		 return 0;
 	 }
 
-
 		/*
 		CA_sample doesn't include fake point.
 		The duplicate conditions in each col has only kept one condition, and the aggregate exists of others has been added to that one.
@@ -167,51 +166,55 @@ namespace aqppp
 		note the CAsample doesn't have the accumulation column because it has the struct of condition attribute combined with accumulation arribute.
 		each col of CAsample is the combination of the accumulatation attribute and condition attribute of the original sample. Each column of it is sorted by condition, then aggreate data.
 		*/
-	 void Tool::TransSample(const std::vector<std::vector<double>> &sample, std::vector<std::vector<CA>> &o_CAsample)
+	 void Tool::TransSample(const std::vector<std::vector<double>>& sample, std::vector<std::vector<CA>>& o_CAsample, const int aggregate_column_id)
 		{
 		 std::vector<std::vector<CA> >temp_casample = std::vector<std::vector<CA>>(sample.size() - 1);
-			for (int ci = 1; ci < sample.size(); ci++)
+		 const int n_columns = sample.size();
+		 for (int i = 0; i < n_columns; i++)
+		 {
+			 int ci = i;
+			 if (i == aggregate_column_id) continue;
+			 else if (i > aggregate_column_id) ci--;
+			 temp_casample[ci] = std::vector<CA>(sample[i].size());
+			 for (int ri = 0; ri < sample[i].size(); ri++)
+			 {
+				 CA temp = CA();
+				 temp.sum = sample[0][ri];
+				 temp.sqrsum = sample[0][ri] * sample[0][ri];
+				 temp.condition_value = sample[i][ri];
+				 temp_casample[ci][ri] = temp;
+			 }
+		 }
+
+		o_CAsample = std::vector<std::vector<CA>>(sample.size() - 1);
+		for (int ci = 0; ci < temp_casample.size(); ci++)
+		{
+			sort(temp_casample[ci].begin(), temp_casample[ci].end(), CA_compare);
+			std::vector<CA> cur_col = std::vector<CA>();
+			CA ca = temp_casample[ci][0];
+			ca.id = 0;
+			ca.count = 1;
+			cur_col.push_back(ca);
+			for (int ri = 1; ri < temp_casample[ci].size(); ri++)
 			{
-				temp_casample[ci - 1] = std::vector<CA>(sample[ci].size());
-				for (int ri = 0; ri < sample[ci].size(); ri++)
+				if (DoubleGreater(temp_casample[ci][ri].condition_value, cur_col[cur_col.size() - 1].condition_value))
 				{
-					CA temp = CA();
-					temp.sum = sample[0][ri];
-					temp.sqrsum = sample[0][ri] * sample[0][ri];
-					temp.condition_value = sample[ci][ri];
-					temp_casample[ci - 1][ri] = temp;
+					CA ca = temp_casample[ci][ri];
+					ca.id = cur_col.size();
+					ca.count = 1;
+					cur_col.push_back(ca);
+				}
+				else {
+					cur_col[cur_col.size() - 1].sum += temp_casample[ci][ri].sum;
+					cur_col[cur_col.size() - 1].sqrsum += temp_casample[ci][ri].sqrsum;
+					cur_col[cur_col.size() - 1].count += 1;
 				}
 			}
+			o_CAsample[ci] = cur_col;
 
-			o_CAsample = std::vector<std::vector<CA>>(sample.size() - 1);
-			for (int ci = 0; ci < temp_casample.size(); ci++)
-			{
-				sort(temp_casample[ci].begin(), temp_casample[ci].end(), CA_compare);
-				std::vector<CA> cur_col = std::vector<CA>();
-				CA ca = temp_casample[ci][0];
-				ca.id = 0;
-				ca.count = 1;
-				cur_col.push_back(ca);
-				for (int ri = 1; ri < temp_casample[ci].size(); ri++)
-				{
-					if (DoubleGreater(temp_casample[ci][ri].condition_value, cur_col[cur_col.size() - 1].condition_value))
-					{
-						CA ca = temp_casample[ci][ri];
-						ca.id = cur_col.size();
-						ca.count = 1;
-						cur_col.push_back(ca);
-					}
-					else {
-						cur_col[cur_col.size() - 1].sum += temp_casample[ci][ri].sum;
-						cur_col[cur_col.size() - 1].sqrsum += temp_casample[ci][ri].sqrsum;
-						cur_col[cur_col.size() - 1].count += 1;
-					}
-				}
-				o_CAsample[ci] = cur_col;
+		}
 
-			}
-
-			return;
+		return;
 		}
 
 	 void Tool::ReadQueriesFromFile(std::string query_file_full_name, int query_dim, std::vector<std::vector<Condition>> &o_user_queries)

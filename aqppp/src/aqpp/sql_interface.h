@@ -17,6 +17,7 @@ namespace aqppp {
 
 		static int ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn, std::string user, std::string pwd);
 		static void ShowError(unsigned int handle_type, const SQLHANDLE& handle);
+		static void ShowError(unsigned int handle_type, const SQLHANDLE& handle, const std::string query_str);
 		static void MakeSqlConnection(std::string odbc_name, std::string user_name, std::string pwd, SQLHANDLE &sqlconnectionhandle);
 		/*
 		return a query result of given string query.
@@ -35,6 +36,7 @@ namespace aqppp {
 
 		// Struct for storing names of numerical and categorical columns
 		struct TableColumns {
+			std::vector<std::string> all_columns;
 			std::vector<std::string> numeric_columns;
 			std::vector<std::string> categorical_columns;
 		};

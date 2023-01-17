@@ -1,16 +1,18 @@
 #pragma once
-#include<direct.h>
-#include<assert.h>
+#include <direct.h>
+#include <assert.h>
 #include <iostream>
-#include<fstream>
+#include <fstream>
 #include <vector>
 #include <iterator>
-#include<algorithm>
+#include <algorithm>
 #include <sstream>
-#include<string>
-#include<random>
+#include <string>
+#include <random>
+#include <unordered_set>
+
 #include"common_content.h"
-#include<unordered_set>
+
 namespace aqppp
 {
 	class Tool {

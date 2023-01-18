@@ -5,7 +5,7 @@
 
 namespace aqppp {
 
-	Precompute::Precompute(std::string db_name, std::string table_name, std::string agg_name, std::unordered_set<std::string> condition_names)
+	Precompute::Precompute(std::string db_name, std::string table_name, std::string agg_name, std::vector<std::string> condition_names)
 	{
 		this->PAR.DB_NAME = db_name;
 		this->PAR.AGGREGATE_NAME = agg_name;

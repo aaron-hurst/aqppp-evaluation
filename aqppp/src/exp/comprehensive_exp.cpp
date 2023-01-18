@@ -82,7 +82,7 @@ namespace expDemo {
 			/*----------creat sample, gen query.------------*/
 			clock_t bt = clock();
 			std::pair<double, double> time_create_db_samples;
-			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDbSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME, PAR.SUB_SAMPLE_NAME });
+			if (PAR.CREATE_DB_SAMPLES) time_create_db_samples = aqppp::SqlInterface::CreateDBSamples(sqlconnectionhandle, PAR.RAND_SEED, PAR.DB_NAME, PAR.TABLE_NAME, { PAR.SAMPLE_RATE, PAR.SUB_SAMPLE_RATE }, { PAR.SAMPLE_NAME, PAR.SUB_SAMPLE_NAME });
 			std::cout << "time create samples: " << time_create_db_samples.first << " " << time_create_db_samples.second << std::endl;
 			/*----------end creat sample, gen query.---------*/
 
@@ -93,6 +93,7 @@ namespace expDemo {
 			std::pair<double,double> read_sample_times=ReadSamples(sqlconnectionhandle, PAR, 10, sample, small_sample);
 			double time_read_sample = read_sample_times.first;
 			double time_read_small_sample = read_sample_times.second;
+			PAR.SAMPLE_ROW_NUM = sample[0].size();
 			
 			fprintf(info_file, "sample_row_num:%f\n", (double)sample[0].size());
 			std::cout << "sub_sample size:" << small_sample[0].size() << std::endl;
@@ -166,8 +167,7 @@ namespace expDemo {
 				}
 				
 				double time_NF_mtl_res = 0;
-				std::unordered_set<std::string> condition_columns(PAR.CONDITION_NAMES.begin(), PAR.CONDITION_NAMES.end());
-				if (exp_par.isMTL) time_NF_mtl_res = aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, PAR.AGGREGATE_NAME, condition_columns).GetPrefixSumCube(NF_mtl_points, sqlconnectionhandle, NF_mtl_res, "sum");
+				if (exp_par.isMTL) time_NF_mtl_res = aqppp::Precompute(PAR.DB_NAME, PAR.TABLE_NAME, PAR.AGGREGATE_NAME, PAR.CONDITION_NAMES).GetPrefixSumCube(NF_mtl_points, sqlconnectionhandle, NF_mtl_res, "sum");
 			/*-------------------------------------------------------------------*/
 
 

@@ -85,7 +85,7 @@ void SqlInterface::SqlQuery(std::string query, SQLHANDLE &sqlstatementhandle) {
 
 /*create sample and small_sample table in MySQL database.
  */
-std::pair<double, double> SqlInterface::CreateDbSamples(
+std::pair<double, double> SqlInterface::CreateDBSamples(
     SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name,
     std::string table_name, std::pair<double, double> sample_rates,
     std::pair<std::string, std::string> sample_names) {
@@ -295,20 +295,19 @@ std::string SqlInterface::ReadTableStr(
   return query;
 }
 
-double SqlInterface::ReadDb(SQLHANDLE &sqlconnectionhandle,
+double SqlInterface::ReadDB(SQLHANDLE &sqlconnectionhandle,
                             std::vector<std::vector<double>> &o_table,
                             std::string db_name, std::string table_name,
-                            std::string AGGREGATE_NAME,
-                            std::vector<std::string> CONDITION_NAMES) {
+                            std::string aggregate_column_name,
+                            std::vector<std::string> condition_column_names) {
   SQLHANDLE sqlstatementhandle = NULL;
   if (SQLAllocHandle(SQL_HANDLE_STMT, sqlconnectionhandle,
                      &sqlstatementhandle) != SQL_SUCCESS)
     return -1;
-
-  double st = clock();
+  double t_start = clock();
   o_table = std::vector<std::vector<double>>();
-  std::string query =
-      ReadTableStr(db_name, table_name, AGGREGATE_NAME, CONDITION_NAMES);
+  std::string query = ReadTableStr(db_name, table_name, aggregate_column_name,
+                                   condition_column_names);
   SqlInterface::SqlQuery(query, sqlstatementhandle);
   short int COL_NUM = 0;
   SQLNumResultCols(sqlstatementhandle, &COL_NUM);
@@ -316,15 +315,16 @@ double SqlInterface::ReadDb(SQLHANDLE &sqlconnectionhandle,
     o_table.push_back(std::vector<double>());  // add a vector to the table for
                                                // each column in the query
   while (SQLFetch(sqlstatementhandle) == SQL_SUCCESS) {
-    double acc_data = Column2Numeric(sqlstatementhandle, 0, AGGREGATE_NAME);
+    double acc_data =
+        Column2Numeric(sqlstatementhandle, 0, aggregate_column_name);
     o_table[0].push_back(acc_data);
     for (int ci = 1; ci < COL_NUM; ci++) {
-      double data =
-          Column2Numeric(sqlstatementhandle, ci, CONDITION_NAMES[ci - 1]);
+      double data = Column2Numeric(sqlstatementhandle, ci,
+                                   condition_column_names[ci - 1]);
       o_table[ci].push_back(data);
     }
   }
-  double read_time = ((double)clock() - st) / CLOCKS_PER_SEC;
+  double read_time = ((double)clock() - t_start) / CLOCKS_PER_SEC;
   SQLFreeHandle(SQL_HANDLE_STMT, sqlstatementhandle);
   return read_time;
 }

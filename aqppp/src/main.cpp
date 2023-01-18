@@ -83,7 +83,8 @@ int main() {
 
   // Run experiments
   if (RUN_DEMO) expDemo::ComprehensiveExp::Exp(sqlconnectionhandle);
-  if (RUN_COMPARISON) exp_comparison::ComparisonExperiment::RunExperiment(sqlconnectionhandle);
+  if (RUN_COMPARISON)
+    exp_comparison::ComparisonExperiment(sqlconnectionhandle).RunExperiment();
 
   std::cout << "All experiments completed." << std::endl;
   SQLDisconnect(sqlconnectionhandle);

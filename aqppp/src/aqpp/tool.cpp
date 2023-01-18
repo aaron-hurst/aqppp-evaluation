@@ -161,30 +161,26 @@ namespace aqppp
 
 		/*
 		CA_sample doesn't include fake point.
-		The duplicate conditions in each col has only kept one condition, and the aggregate exists of others has been added to that one.
+		The duplicate conditions in each col has only kept one condition, and the aggreate exists of others has been added to that one.
 		trans original sample into CAsample.
 		note the CAsample doesn't have the accumulation column because it has the struct of condition attribute combined with accumulation arribute.
 		each col of CAsample is the combination of the accumulatation attribute and condition attribute of the original sample. Each column of it is sorted by condition, then aggreate data.
 		*/
-	 void Tool::TransSample(const std::vector<std::vector<double>>& sample, std::vector<std::vector<CA>>& o_CAsample, const int aggregate_column_id)
+	void Tool::TransSample(const std::vector<std::vector<double>> &sample, std::vector<std::vector<CA>> &o_CAsample)
+	{
+		std::vector<std::vector<CA> >temp_casample = std::vector<std::vector<CA>>(sample.size() - 1);
+		for (int ci = 1; ci < sample.size(); ci++)
 		{
-		 std::vector<std::vector<CA> >temp_casample = std::vector<std::vector<CA>>(sample.size() - 1);
-		 const int n_columns = sample.size();
-		 for (int i = 0; i < n_columns; i++)
-		 {
-			 int ci = i;
-			 if (i == aggregate_column_id) continue;
-			 else if (i > aggregate_column_id) ci--;
-			 temp_casample[ci] = std::vector<CA>(sample[i].size());
-			 for (int ri = 0; ri < sample[i].size(); ri++)
-			 {
-				 CA temp = CA();
-				 temp.sum = sample[0][ri];
-				 temp.sqrsum = sample[0][ri] * sample[0][ri];
-				 temp.condition_value = sample[i][ri];
-				 temp_casample[ci][ri] = temp;
-			 }
-		 }
+			temp_casample[ci - 1] = std::vector<CA>(sample[ci].size());
+			for (int ri = 0; ri < sample[ci].size(); ri++)
+			{
+				CA temp = CA();
+				temp.sum = sample[0][ri];
+				temp.sqrsum = sample[0][ri] * sample[0][ri];
+				temp.condition_value = sample[ci][ri];
+				temp_casample[ci - 1][ri] = temp;
+			}
+		}
 
 		o_CAsample = std::vector<std::vector<CA>>(sample.size() - 1);
 		for (int ci = 0; ci < temp_casample.size(); ci++)
@@ -215,7 +211,7 @@ namespace aqppp
 		}
 
 		return;
-		}
+	}
 
 	 void Tool::ReadQueriesFromFile(std::string query_file_full_name, int query_dim, std::vector<std::vector<Condition>> &o_user_queries)
 	 {

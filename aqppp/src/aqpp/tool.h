@@ -54,7 +54,7 @@ namespace aqppp
 		each col of CAsample is the combination of the accumulatation attribute and condition attribute of the original sample. Each column of it is sorted by condition, then aggreate data.
 
 		*/
-		static void TransSample(const std::vector<std::vector<double>> &sample, std::vector<std::vector<CA>> &o_CAsample, const int aggregate_column_id = 0);
+		static void TransSample(const std::vector<std::vector<double>> &sample, std::vector<std::vector<CA>> &o_CAsample);
 
 		static std::pair<int, double> EstimateSelectively(const std::vector<std::vector<double>> &sample, const std::vector<Condition> &demands);
 		static void GenUserQuires(const std::vector<std::vector<double>> &sample, const std::vector<std::vector<CA>> &casample, const int seed, const int query_num, std::pair<double, double> QUERY_SELECTIVELY_RANGE, std::vector<std::vector<Condition> > &o_user_queries, const std::unordered_map<std::vector<int>, Group, VectorHash> &groups= std::unordered_map<std::vector<int>, Group, VectorHash>());

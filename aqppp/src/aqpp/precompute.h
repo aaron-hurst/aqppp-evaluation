@@ -18,11 +18,11 @@ namespace aqppp {
 		std::string DB_NAME;
 		std::string TABLE_NAME;
 		std::string AGGREGATE_NAME;
-		std::unordered_set<std::string> CONDITION_NAMES;
+		std::vector<std::string> CONDITION_NAMES;
 	} PAR;
 
 	public:
-		Precompute(std::string db_name, std::string table_name, std::string agg_name, std::unordered_set<std::string> condition_names);
+		Precompute(std::string db_name, std::string table_name, std::string agg_name, std::vector<std::string> condition_names);
 		static int MyLowerBound(const std::vector<CA> &cur_col, const CA &key);
 		void InitCube(int a, std::vector<int> &cur_indx, MTL_STRU &o_mtl_data, const std::vector<std::vector<CA>>& mtl_points);
 		double GetPrefixSumCube(const std::vector<std::vector<CA>>& mtl_points, SQLHANDLE &sqlconnectionhandle, MTL_STRU & o_mtl_res, std::string query_type, const DistId &distinct_ids = DistId());

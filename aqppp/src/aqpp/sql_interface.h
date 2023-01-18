@@ -29,7 +29,7 @@ class SqlInterface {
                                     double sample_rate);
 
   // Create sample and small_sample table in MySQL database.
-  static std::pair<double, double> CreateDbSamples(
+  static std::pair<double, double> CreateDBSamples(
       SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name,
       std::string table_name, std::pair<double, double> sample_rates,
       std::pair<std::string, std::string> sample_names);
@@ -37,7 +37,7 @@ class SqlInterface {
                                std::string db_name, std::string table_name,
                                double sample_rate, std::string sample_name);
 
-  static double ReadDb(SQLHANDLE &sqlconnectionhandle,
+  static double ReadDB(SQLHANDLE &sqlconnectionhandle,
                        std::vector<std::vector<double>> &o_table,
                        std::string db_name, std::string table_name,
                        std::string AGGREGATE_NAME,

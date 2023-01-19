@@ -51,7 +51,6 @@ int main() {
   // Define SQL handles
   SQLHANDLE sqlenvhandle = NULL;
   SQLHANDLE sqlconnectionhandle = NULL;
-  SQLHANDLE sqlstatementhandle = NULL;
   SQLWCHAR retconstring[1000];
 
   // Connect to SQL Server
@@ -72,16 +71,17 @@ int main() {
                  L"consumption;Trusted=true;",
       SQL_NTS, retconstring, 1024, NULL, SQL_DRIVER_NOPROMPT)) {
     case SQL_SUCCESS_WITH_INFO:
-      std::cout << "success" << std::endl;
+      std::cout << "Success!" << std::endl;
       aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
       break;
     default:
-      std::cout << "error" << std::endl;
+      std::cout << "Error." << std::endl;
       aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
       return -1;
   }
 
   // Run experiments
+  std::cout << "Beginning experiments..." << std::endl;
   if (RUN_DEMO) expDemo::ComprehensiveExp::Exp(sqlconnectionhandle);
   if (RUN_COMPARISON)
     exp_comparison::ComparisonExperiment(sqlconnectionhandle).RunExperiment();

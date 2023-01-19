@@ -212,7 +212,8 @@ namespace expDemo {
 
 
 				double t5 = clock();
-				double real_value = QueryRealValue(cur_q, PAR.TABLE_NAME, sqlconnectionhandle, PAR, "sum");
+				double real_value;
+				QueryRealValue(cur_q, PAR.CONDITION_NAMES, "sum", PAR.AGGREGATE_NAME, PAR.DB_NAME, PAR.TABLE_NAME, sqlconnectionhandle, real_value);
 				double time_direct = (clock() - t5) / CLOCKS_PER_SEC;
 
 				double selectively = aqppp::Tool::EstimateSelectively(sample, cur_q).second;

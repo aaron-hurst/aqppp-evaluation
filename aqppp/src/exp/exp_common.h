@@ -19,15 +19,20 @@ std::pair<double, double> ReadSamples(
 // pair<double, double> query_real_value4sum(vector<Condition>& cur_q, string
 // table_name, MYSQL* conn, const Settings PAR);
 
-double QueryRealValue(
-    const std::vector<aqppp::Condition>& cur_q, std::string table_name,
-    SQLHANDLE& sqlconnectionhandle, const aqppp::Settings PAR,
-    std::string agg_action,
-    std::vector<std::unordered_map<int, std::string>>& distinct_itos,
-    bool CLEANCACHE);
-double QueryRealValue(const std::vector<aqppp::Condition>& cur_q,
-                      std::string table_name, SQLHANDLE& sqlconnectionhandle,
-                      const aqppp::Settings PAR, std::string agg_action);
+std::string FormQueryString(
+    const std::vector<aqppp::Condition>& conditions,
+    const std::vector<std::string> condition_column_names,
+    const std::string aggregation, const std::string aggregate_column_name,
+    const std::string db_name, const std::string table_name,
+    std::vector<std::unordered_map<int, std::string>>& distinct_itos);
+const int QueryRealValue(const std::vector<aqppp::Condition>& conditions,
+                         const std::vector<std::string> condition_column_names,
+                         const std::string aggregation,
+                         const std::string aggregate_column_name,
+                         const std::string db_name,
+                         const std::string table_name,
+                         SQLHANDLE& sql_connection_handle, double& value,
+                         bool CLEANCACHE = false);
 
 // double count_db(string table_name, SQLHANDLE &sqlstatementhandle, string
 // db_name);

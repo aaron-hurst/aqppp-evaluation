@@ -73,14 +73,18 @@ int SqlInterface::ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn,
 /*
 return a query result of given string query.
 */
-void SqlInterface::SqlQuery(std::string query, SQLHANDLE &sqlstatementhandle) {
+const int SqlInterface::SqlQuery(std::string query,
+                                 SQLHANDLE &sqlstatementhandle) {
   std::wstring wquery = std::wstring(query.begin(), query.end());
   // SQLWCHAR wq[10000] = {};
   WCHAR *wq = const_cast<WCHAR *>(wquery.c_str());
   // std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
   if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle, wq, SQL_NTS)) {
+    std::cout << "Error with query: \n" << query << std::endl;
     ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
+    return -1;
   }
+  return 0;
 }
 
 /*create sample and small_sample table in MySQL database.
@@ -89,12 +93,13 @@ std::pair<double, double> SqlInterface::CreateDBSamples(
     SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name,
     std::string table_name, std::pair<double, double> sample_rates,
     std::pair<std::string, std::string> sample_names) {
-  double t1 = CreateDbSample(sqlconnectionhandle, seed + 1, db_name, table_name,
-                             sample_rates.first, sample_names.first);
-  double t2 =
+  double t_sample, t_sub_sample;
+  t_sample = CreateDbSample(sqlconnectionhandle, seed + 1, db_name, table_name,
+                            sample_rates.first, sample_names.first);
+  t_sub_sample =
       CreateDbSample(sqlconnectionhandle, seed + 2, db_name, sample_names.first,
                      sample_rates.second, sample_names.second);
-  return {t1, t2};
+  return {t_sample, t_sub_sample};
 }
 
 // Get column names for a given table and organise them into numerical and
@@ -170,7 +175,7 @@ const SqlInterface::TableColumns SqlInterface::GetTableColumns(
                 << std::endl;
     }
   } else {
-    std::cout << "error" << std::endl;
+    std::cout << "SQL error when getting table columns." << std::endl;
     ShowError(SQL_HANDLE_STMT, h_stmt);
   }
   return results;
@@ -214,16 +219,22 @@ double SqlInterface::CreateDbSample(SQLHANDLE &sqlconnectionhandle, int seed,
   std::string create_sample_cstore_indx =
       "CREATE CLUSTERED COLUMNSTORE INDEX cci_" + sample_name + " ON " +
       sample_full_name + ";";
-  std::cout << "Setting up sample database tables" << std::endl;
-  std::cout << "Query to drop existing table: \n\t" << drop_sample << std::endl;
-  std::cout << "Query to create new table: \n\t" << create_sample << std::endl;
-  std::cout << "Query to create ??: \n\t" << create_sample_cstore_indx
-            << std::endl;
-
-  SqlQuery(drop_sample, sqlstatementhandle);
+  std::cout << "Setting up " << sample_name << " database table" << std::endl;
+  int ret = 0;
   double t1 = clock();
-  SqlQuery(create_sample, sqlstatementhandle);
-  SqlQuery(create_sample_cstore_indx, sqlstatementhandle);
+  for (auto query : {drop_sample, create_sample, create_sample_cstore_indx}) {
+    std::cout << "Running query:\n" << query << std::endl;
+    if (0 != SqlQuery(query, sqlstatementhandle)) {
+      // Retry after a pause
+      std::cout << "Pausing and retrying..." << std::endl;
+      Sleep(3);
+      std::cout << "Retry query..." << std::endl;
+      if (0 != SqlQuery(query, sqlstatementhandle)) {
+        SQLFreeHandle(SQL_HANDLE_STMT, sqlstatementhandle);
+        return -1;
+      }
+    }
+  }
   double create_sample_time = (clock() - t1) / CLOCKS_PER_SEC;
   SQLFreeHandle(SQL_HANDLE_STMT, sqlstatementhandle);
   return create_sample_time;

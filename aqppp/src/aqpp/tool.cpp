@@ -168,6 +168,7 @@ namespace aqppp
 		*/
 	void Tool::TransSample(const std::vector<std::vector<double>> &sample, std::vector<std::vector<CA>> &o_CAsample)
 	{
+		assert(sample.size() > 0);
 		std::vector<std::vector<CA> >temp_casample = std::vector<std::vector<CA>>(sample.size() - 1);
 		for (int ci = 1; ci < sample.size(); ci++)
 		{

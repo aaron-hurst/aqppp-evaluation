@@ -22,7 +22,7 @@ class SqlInterface {
   /*
   return a query result of given string query.
   */
-  static void SqlQuery(std::string query, SQLHANDLE &sqlstatementhandle);
+  static const int SqlQuery(std::string query, SQLHANDLE &sqlstatementhandle);
 
   static std::string ComputeRandStr(SQLHANDLE &sqlConnectionHandle,
                                     std::string table_name, int seed,

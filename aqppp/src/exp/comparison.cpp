@@ -103,12 +103,18 @@ const int ComparisonExperiment::RunExperiment() {
           SQL_CONNECTION_HANDLE_, RAND_SEED_, DB_NAME_, TABLE_NAME_,
           {SAMPLE_RATE_, SUB_SAMPLE_RATE_},
           {SAMPLE_TABLE_NAME_, SUB_SAMPLE_TABLE_NAME_});
+  if (time_samples_creation.first == -1 || time_samples_creation.second == -1) {
+    std::cout << "Error creating samples." << std::endl;
+    return -1;
+  }
 
   // Load query conditions
+  std::cout << "Loading queries..." << std::endl;
   std::vector<aqppp::Condition> queries;
   LoadQueries(queries);
 
   // Run the queries over each aggregation column
+  std::cout << "Evaluating queries..." << std::endl;
   std::vector<double> sample_load_times = std::vector<double>();
   std::vector<double> sub_sample_load_times = std::vector<double>();
   std::vector<double> compute_prefix_cube_times = std::vector<double>();
@@ -119,18 +125,20 @@ const int ComparisonExperiment::RunExperiment() {
   double total_time_exact = 0;
   double n_queries_completed = 0;
   for (int agg_col_id = 0; agg_col_id < N_COLUMNS_; agg_col_id++) {
+    std::string aggregation = "SUM";  // TODO iterate over each aggregation
     std::string aggregate_column_name = table_columns.all_columns[agg_col_id];
     int previous_condition_column_id = -1;
     std::vector<std::vector<double>> sample;
     std::vector<std::vector<double>> small_sample;
     std::vector<std::vector<aqppp::CA>> NF_mtl_points;
     aqppp::MTL_STRU NF_mtl_res;
-    // TODO also iterate over each aggregation
     for (int query_id = 0; query_id < queries.size(); query_id++) {
       // Setup
       aqppp::Condition query = queries[query_id];
-      std::vector<std::string> condition_column_name = {
-          column_names[query.column_id]};
+      std::string condition_column_name = {column_names[query.column_id]};
+      std::cout << "Aggregation column: " << aggregate_column_name
+                << ". Query: " << query_id
+                << ". Condition column: " << condition_column_name << std::endl;
 
       // If current and previous condition columns are the same, then there is
       // no need to re-load the sample or re-compute the prefix cube
@@ -138,23 +146,27 @@ const int ComparisonExperiment::RunExperiment() {
         // Load samples
         // NOTE: This is repeated multiple times to find the median time to load
         // the sample.
+        std::cout << "First query for this combination of columns, loading "
+                     "sample and computing prefix "
+                     "cube..."
+                  << std::endl;
         for (int i = 0; i < N_RUNS_LOAD_SAMPLES_; i++) {
           double sample_load_time = aqppp::SqlInterface::ReadDB(
               SQL_CONNECTION_HANDLE_, sample, DB_NAME_, SAMPLE_TABLE_NAME_,
-              aggregate_column_name, condition_column_name);
+              aggregate_column_name, {condition_column_name});
           double sub_sample_load_time = aqppp::SqlInterface::ReadDB(
               SQL_CONNECTION_HANDLE_, small_sample, DB_NAME_,
               SUB_SAMPLE_TABLE_NAME_, aggregate_column_name,
-              condition_column_name);
+              {condition_column_name});
           sample_load_times.push_back(sample_load_time);
           sub_sample_load_times.push_back(sub_sample_load_time);
         }
 
         // Compute prefix cube
-        double compute_prefix_cube_time = ComputePrefixCube(
-            sample, aggregate_column_name, condition_column_name, NF_mtl_points,
-            NF_mtl_res, log_file);
-        compute_prefix_cube_times.push_back(compute_prefix_cube_time);
+        // double compute_prefix_cube_time = ComputePrefixCube(
+        //    sample, aggregate_column_name, {condition_column_name},
+        //    NF_mtl_points, NF_mtl_res, log_file);
+        // compute_prefix_cube_times.push_back(compute_prefix_cube_time);
       }
 
       // Sampling only
@@ -177,9 +189,16 @@ const int ComparisonExperiment::RunExperiment() {
       // Exact value... not necessary since I compute this elsewhere already?
       double t_exact_start = clock();
       double exact_value = 0;
-      // double exact_value = expDemo::QueryRealValue(
-      //     queries[query_id], TABLE_NAME_, SQL_CONNECTION_HANDLE_, PAR,
-      //     "sum");
+//       if (0 != expDemo::QueryRealValue({query}, {condition_column_name},
+//                                        aggregation, aggregate_column_name,
+//                                        DB_NAME_, TABLE_NAME_,
+//                                        SQL_CONNECTION_HANDLE_, exact_value)) {
+//         std::cout << "Error on exact value. Terminating." << std::endl;
+//         fclose(results_file);
+//         fclose(log_file);
+//         fclose(info_file);
+//         return -1;
+//       };
       double duration_exact = (clock() - t_exact_start) / CLOCKS_PER_SEC;
 
       // Compute errors and store results
@@ -194,12 +213,12 @@ const int ComparisonExperiment::RunExperiment() {
       total_time_sampling += duration_sampling;
       total_time_aqppp += duration_aqppp;
       total_time_exact += duration_exact;
-      fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", query_id,
-        agg_col_id, aggregation, 
+      fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+              query_id, agg_col_id, aggregation,
 
               result_sampling.first, result_aqppp.first, result_sampling.second,
-              result_aqppp.second, exact_value, error_sampling, error_aqppp, duration_sampling,
-              duration_aqppp, duration_exact);
+              result_aqppp.second, exact_value, error_sampling, error_aqppp,
+              duration_sampling, duration_aqppp, duration_exact);
 
       // Update variables
       n_queries_completed++;

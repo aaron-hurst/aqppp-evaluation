@@ -1,5 +1,6 @@
+.DS_Store
 .vs/
 .vscode/
 *.user
+aqppp/exp_result/
 bin/
-.DS_Store

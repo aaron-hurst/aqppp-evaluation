@@ -146,14 +146,21 @@ const int QueryRealValue(const std::vector<aqppp::Condition>& conditions,
   // std::cout << "Query for exact result: " << query_str << std::endl;
 
   // Run query and return result
-  if (0 != aqppp::SqlInterface::SqlQuery(query_str, sql_statement_handle)) {
+  std::wstring wquery = std::wstring(query_str.begin(), query_str.end());
+  WCHAR* wq = const_cast<WCHAR*>(wquery.c_str());
+  if (SQL_SUCCESS != SQLExecDirect(sql_statement_handle, wq, SQL_NTS)) {
+    std::cout << "Error with query: \n" << query_str << std::endl;
+    aqppp::SqlInterface::ShowError(SQL_HANDLE_STMT, sql_statement_handle);
     SQLFreeHandle(SQL_HANDLE_STMT, sql_statement_handle);
     return -1;
   }
-  while (SQLFetch(sql_statement_handle) == SQL_SUCCESS) {
-    SQLGetData(sql_statement_handle, 1, SQL_C_DOUBLE, &value, 0, NULL);
+  float v = -1;
+  while (SQL_SUCCESS == SQLFetch(sql_statement_handle)) {
+    //SQLGetData(sql_statement_handle, 1, SQL_C_DOUBLE, &value, 0, NULL);
+    SQLGetData(sql_statement_handle, 1, SQL_C_FLOAT, &v, 0, NULL);
   }
   SQLFreeHandle(SQL_HANDLE_STMT, sql_statement_handle);
+  value = (double)v;
   return 0;
 }
 

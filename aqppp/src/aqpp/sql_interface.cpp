@@ -73,17 +73,16 @@ int SqlInterface::ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn,
 /*
 return a query result of given string query.
 */
-const int SqlInterface::SqlQuery(std::string query,
+const int SqlInterface::SqlQuery(const std::string query,
                                  SQLHANDLE &sqlstatementhandle) {
-  std::wstring wquery = std::wstring(query.begin(), query.end());
-  // SQLWCHAR wq[10000] = {};
-  WCHAR *wq = const_cast<WCHAR *>(wquery.c_str());
-  // std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
-  if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle, wq, SQL_NTS)) {
-    std::cout << "Error with query: \n" << query << std::endl;
-    ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
-    return -1;
-  }
+   std::wstring wquery = std::wstring(query.begin(), query.end());
+   WCHAR *wq = const_cast<WCHAR *>(wquery.c_str());
+   // std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
+   if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle, wq, SQL_NTS)) {
+     std::cout << "Error with query: \n" << query << std::endl;
+     ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
+     return -1;
+   }
   return 0;
 }
 

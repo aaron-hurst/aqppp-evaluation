@@ -20,10 +20,9 @@ class ComparisonExperiment {
   const std::vector<std::string> AGGREGATIONS_ = {"COUNT", "SUM", "AVG"};
   const std::string DATASET_NAME_ = "uci-household_power_consumption";
   const std::string DB_NAME_ = "uci_household_power_consumption.dbo";
-  const std::string TABLE_NAME_ = "household_power_consumption";
-  const std::string SAMPLE_TABLE_NAME_ = "household_power_consumption_sample";
-  const std::string SUB_SAMPLE_TABLE_NAME_ =
-      "household_power_consumption_sub_sample";
+  const std::string TABLE_NAME_ = "household_power_consumption_100k";
+  std::string SAMPLE_TABLE_NAME_;
+  std::string SUB_SAMPLE_TABLE_NAME_;
   const std::string QUERIES_FILENAME_ =
       "uci-household_power_consumption-N=100.csv";
   const std::string QUERIES_BASE_PATH_ =
@@ -42,7 +41,7 @@ class ComparisonExperiment {
   const bool isMTL_ = false;
   const int ALL_MTL_POINTS_ = 50000;
   const int EP_PIECE_NUM_ = 20;
-  const int N_RUNS_LOAD_SAMPLES_ = 10;
+  const int N_RUNS_LOAD_SAMPLES_ = 1;
   SQLHANDLE& SQL_CONNECTION_HANDLE_;
 
   const int LoadQueries(std::vector<aqppp::Condition>& o_queries) const;

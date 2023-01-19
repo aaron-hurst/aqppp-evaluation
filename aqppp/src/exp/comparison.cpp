@@ -13,6 +13,8 @@ ComparisonExperiment::ComparisonExperiment(SQLHANDLE& sql_connection_handle)
                  "sample_rate_" + std::to_string(SAMPLE_RATE_);
   QUERIES_PATH_ =
       QUERIES_BASE_PATH_ + "/" + DATASET_NAME_ + "/" + QUERIES_FILENAME_;
+  SAMPLE_TABLE_NAME_ = TABLE_NAME_ + "_sample";
+  SUB_SAMPLE_TABLE_NAME_ = TABLE_NAME_ + "_sub_sample";
 };
 
 // Load queries
@@ -133,6 +135,10 @@ const int ComparisonExperiment::RunExperiment() {
     std::vector<std::vector<aqppp::CA>> NF_mtl_points;
     aqppp::MTL_STRU NF_mtl_res;
     for (int query_id = 0; query_id < queries.size(); query_id++) {
+
+      // TEMPORARY
+      if (query_id > 50) break;
+
       // Setup
       aqppp::Condition query = queries[query_id];
       std::string condition_column_name = {column_names[query.column_id]};
@@ -161,6 +167,7 @@ const int ComparisonExperiment::RunExperiment() {
           sample_load_times.push_back(sample_load_time);
           sub_sample_load_times.push_back(sub_sample_load_time);
         }
+        SAMPLE_ROW_NUM_ = sample[0].size();
 
         // Compute prefix cube
         // double compute_prefix_cube_time = ComputePrefixCube(
@@ -189,16 +196,16 @@ const int ComparisonExperiment::RunExperiment() {
       // Exact value... not necessary since I compute this elsewhere already?
       double t_exact_start = clock();
       double exact_value = 0;
-//       if (0 != expDemo::QueryRealValue({query}, {condition_column_name},
-//                                        aggregation, aggregate_column_name,
-//                                        DB_NAME_, TABLE_NAME_,
-//                                        SQL_CONNECTION_HANDLE_, exact_value)) {
-//         std::cout << "Error on exact value. Terminating." << std::endl;
-//         fclose(results_file);
-//         fclose(log_file);
-//         fclose(info_file);
-//         return -1;
-//       };
+      if (0 != expDemo::QueryRealValue({query}, {condition_column_name},
+                                       aggregation, aggregate_column_name,
+                                       DB_NAME_, TABLE_NAME_,
+                                       SQL_CONNECTION_HANDLE_, exact_value)) {
+        std::cout << "Error on exact value. Terminating." << std::endl;
+        fclose(results_file);
+        fclose(log_file);
+        fclose(info_file);
+        return -1;
+      };
       double duration_exact = (clock() - t_exact_start) / CLOCKS_PER_SEC;
 
       // Compute errors and store results
@@ -214,11 +221,10 @@ const int ComparisonExperiment::RunExperiment() {
       total_time_aqppp += duration_aqppp;
       total_time_exact += duration_exact;
       fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
-              query_id, agg_col_id, aggregation,
-
-              result_sampling.first, result_aqppp.first, result_sampling.second,
-              result_aqppp.second, exact_value, error_sampling, error_aqppp,
-              duration_sampling, duration_aqppp, duration_exact);
+              query_id, agg_col_id, aggregation.c_str(), result_sampling.first,
+              result_aqppp.first, result_sampling.second, result_aqppp.second,
+              exact_value, error_sampling, error_aqppp, duration_sampling,
+              duration_aqppp, duration_exact);
 
       // Update variables
       n_queries_completed++;

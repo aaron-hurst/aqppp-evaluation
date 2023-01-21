@@ -156,7 +156,6 @@ const int QueryRealValue(const std::vector<aqppp::Condition>& conditions,
   }
   float v = -1;
   while (SQL_SUCCESS == SQLFetch(sql_statement_handle)) {
-    //SQLGetData(sql_statement_handle, 1, SQL_C_DOUBLE, &value, 0, NULL);
     SQLGetData(sql_statement_handle, 1, SQL_C_FLOAT, &v, 0, NULL);
   }
   SQLFreeHandle(SQL_HANDLE_STMT, sql_statement_handle);

@@ -27,7 +27,7 @@ namespace aqppp {
 					fprintf(info_file, "(%f,%f) ", ele.lb, ele.ub);
 				}
 				fprintf(info_file, "\n");
-				return Sampling(this->PAR.SAMPLE_RATE, this->PAR.CI_INDEX).SamplingForSumQuery(sample, user_demands);
+				return Sampling(this->PAR.SAMPLE_RATE, this->PAR.CI_INDEX).Sum(sample, user_demands);
 			}
 		}
 

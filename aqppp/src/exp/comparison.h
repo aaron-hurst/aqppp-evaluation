@@ -52,5 +52,7 @@ class ComparisonExperiment {
       std::vector<std::vector<aqppp::CA>> o_NF_mtl_points,
       aqppp::MTL_STRU o_NF_mtl_res, FILE* log_file) const;
   void WriteParameters(FILE* fp) const;
+  static const double PercentageError(const double estimate,
+                                      const double exact_value);
 };
 }  // namespace exp_comparison

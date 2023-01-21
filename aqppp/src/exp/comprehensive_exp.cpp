@@ -198,7 +198,7 @@ namespace expDemo {
 
 				// Query result from sampling?
 				double t3 = clock();
-				std::pair<double, double> spl_sumci = aqppp::Sampling(PAR.SAMPLE_RATE, PAR.CI_INDEX).SamplingForSumQuery(sample, cur_q);
+				std::pair<double, double> spl_sumci = aqppp::Sampling(PAR.SAMPLE_RATE, PAR.CI_INDEX).Sum(sample, cur_q);
 				//cout << "lala "<<spl_sumci.first << " " << spl_sumci.second << endl;
 				double time_spl = (clock() - t3) / CLOCKS_PER_SEC;
 

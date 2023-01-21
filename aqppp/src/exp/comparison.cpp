@@ -5,6 +5,8 @@
 
 #include "comparison.h"
 
+#include <cmath>
+
 namespace exp_comparison {
 
 ComparisonExperiment::ComparisonExperiment(SQLHANDLE& sql_connection_handle)
@@ -71,6 +73,16 @@ void ComparisonExperiment::WriteParameters(FILE* fp) const {
   fprintf(fp, "----------------------------\n");
 }
 
+const double ComparisonExperiment::PercentageError(const double estimate, const double exact_value) {
+  if (exact_value > 0) {
+    return abs(estimate - exact_value) / exact_value * 100;
+  } else if (estimate == 0) {
+    return 0;
+  } else {
+    return 100;
+  }
+}
+
 // Output files include:
 // - parameters (same as loaded from input parameters file)
 // - info (timings and high-level statistics)
@@ -90,10 +102,9 @@ const int ComparisonExperiment::RunExperiment() {
   N_COLUMNS_ = column_names.size();
   fprintf(results_file,
           "query_id,aggregation_column,aggregation,estimate_sampling,estimate_"
-          "aqppp,ci_sampling,ci_aqppp,"
-          "exact_"
-          "value,error_sampling,error_"
-          "aqppp,time_sampling,time_aqppp,time_exact\n");
+          "aqppp,exact_value,error_sampling,error_aqppp,error_sampling_pct,"
+          "error_aqppp_pct,ci_sampling,ci_aqppp,"
+          "time_sampling,time_aqppp,time_exact\n");
 
   // Export parameters
   ComparisonExperiment::WriteParameters(parameters_file);
@@ -120,12 +131,12 @@ const int ComparisonExperiment::RunExperiment() {
   std::vector<double> sample_load_times = std::vector<double>();
   std::vector<double> sub_sample_load_times = std::vector<double>();
   std::vector<double> compute_prefix_cube_times = std::vector<double>();
-  std::vector<double> errors_sampling = std::vector<double>();
-  std::vector<double> errors_aqppp = std::vector<double>();
+  std::vector<double> errors_sampling_pct = std::vector<double>();
+  std::vector<double> errors_aqppp_pct = std::vector<double>();
   double total_time_sampling = 0;
   double total_time_aqppp = 0;
   double total_time_exact = 0;
-  double n_queries_completed = 0;
+  int n_queries_completed = 0;
   for (int agg_col_id = 0; agg_col_id < N_COLUMNS_; agg_col_id++) {
     std::string aggregation = "SUM";  // TODO iterate over each aggregation
     std::string aggregate_column_name = table_columns.all_columns[agg_col_id];
@@ -178,10 +189,8 @@ const int ComparisonExperiment::RunExperiment() {
 
       // Sampling only
       double t_sampling_start = clock();
-      std::pair<double, double> result_sampling = {0, 0};
-      // std::pair<double, double> result_sampling =
-      //     aqppp::Sampling(PAR.SAMPLE_RATE_, PAR.CI_INDEX_)
-      //         .SamplingForSumQuery(sample, queries[query_id]);
+      std::pair<double, double> result_sampling =
+          aqppp::Sampling(SAMPLE_RATE_, CI_INDEX_).Sum(sample, {query});
       double duration_sampling = (clock() - t_sampling_start) / CLOCKS_PER_SEC;
 
       // AQP++
@@ -209,22 +218,22 @@ const int ComparisonExperiment::RunExperiment() {
       double duration_exact = (clock() - t_exact_start) / CLOCKS_PER_SEC;
 
       // Compute errors and store results
-      // TODO check if these are actually errors... I think it is just the ratio
-      // between the confidence interval width and the exact value
-      double error_sampling =
-          exact_value > 0 ? result_sampling.second / exact_value : 0;
-      double error_aqppp =
-          exact_value > 0 ? result_aqppp.second / exact_value : 0;
-      errors_sampling.push_back(error_sampling);
-      errors_aqppp.push_back(error_aqppp);
+      double error_sampling = result_sampling.first - exact_value;
+      double error_aqppp = result_aqppp.first - exact_value;
+      double error_sampling_pct =
+          PercentageError(result_sampling.first, exact_value);
+      double error_aqp_pct = PercentageError(result_aqppp.first, exact_value);
+      errors_sampling_pct.push_back(error_sampling_pct);
+      errors_aqppp_pct.push_back(error_aqp_pct);
       total_time_sampling += duration_sampling;
       total_time_aqppp += duration_aqppp;
       total_time_exact += duration_exact;
-      fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
+      fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
               query_id, agg_col_id, aggregation.c_str(), result_sampling.first,
-              result_aqppp.first, result_sampling.second, result_aqppp.second,
-              exact_value, error_sampling, error_aqppp, duration_sampling,
-              duration_aqppp, duration_exact);
+              result_aqppp.first, exact_value, error_sampling, error_aqppp,
+              error_sampling_pct, error_aqp_pct, result_sampling.second,
+              result_aqppp.second, duration_sampling, duration_aqppp,
+              duration_exact);
 
       // Update variables
       n_queries_completed++;
@@ -245,14 +254,15 @@ const int ComparisonExperiment::RunExperiment() {
                               time_samples_creation.second +
                               time_compute_prefix_cube;
 
-  double error_sampling_mean = aqppp::Tool::get_avg(errors_sampling);
-  double error_aqppp_mean = aqppp::Tool::get_avg(errors_aqppp);
+  double error_sampling_mean = aqppp::Tool::get_avg(errors_sampling_pct);
+  double error_aqppp_mean = aqppp::Tool::get_avg(errors_aqppp_pct);
   double error_sampling_median =
-      aqppp::Tool::get_percentile(errors_sampling, 0.5);
-  double error_aqppp_median = aqppp::Tool::get_percentile(errors_aqppp, 0.5);
+      aqppp::Tool::get_percentile(errors_sampling_pct, 0.5);
+  double error_aqppp_median =
+      aqppp::Tool::get_percentile(errors_aqppp_pct, 0.5);
   double error_sampling_99p =
-      aqppp::Tool::get_percentile(errors_sampling, 0.99);
-  double error_aqppp_99p = aqppp::Tool::get_percentile(errors_aqppp, 0.99);
+      aqppp::Tool::get_percentile(errors_sampling_pct, 0.99);
+  double error_aqppp_99p = aqppp::Tool::get_percentile(errors_aqppp_pct, 0.99);
 
   fprintf(info_file, "Total experiment duration    %.3f s\n",
           time_full_experiment);
@@ -263,6 +273,7 @@ const int ComparisonExperiment::RunExperiment() {
   fprintf(info_file, "\n");
 
   fprintf(info_file, "Total sample rows            %i\n", SAMPLE_ROW_NUM_);
+  fprintf(info_file, "Total queries compreted      %i\n", n_queries_completed);
   fprintf(info_file, "\n");
 
   fprintf(info_file, "Total pre-processing time    %.3f s\n",
@@ -281,18 +292,17 @@ const int ComparisonExperiment::RunExperiment() {
           total_time_exact / n_queries_completed);
   fprintf(info_file, "\n");
 
-  fprintf(info_file, "Average error sampling 	     %.3f %%\n",
-          100 * error_sampling_mean);
+  fprintf(info_file, "Average error sampling       %.3f %%\n",
+          error_sampling_mean);
   fprintf(info_file, "Average error AQP++          %.3f %%\n",
-          100 * error_aqppp_mean);
-  fprintf(info_file, "Median error sampling 	     %.3f %%\n",
-          100 * error_sampling_median);
-  fprintf(info_file, "Median error AQP++ 	         %.3f %%\n",
-          100 * error_aqppp_median);
+          error_aqppp_mean);
+  fprintf(info_file, "Median error sampling        %.3f %%\n",
+          error_sampling_median);
+  fprintf(info_file, "Median error AQP++           %.3f %%\n",
+          error_aqppp_median);
   fprintf(info_file, "99th percentile sampling     %.3f %%\n",
-          100 * error_sampling_99p);
-  fprintf(info_file, "99th percentile AQP++ 	     %.3f %%\n",
-          100 * error_aqppp_99p);
+          error_sampling_99p);
+  fprintf(info_file, "99th percentile AQP++        %.3f %%\n", error_aqppp_99p);
   fprintf(info_file, "\n");
   fclose(info_file);
   std::cout << "Comparison experiment completed." << std::endl;

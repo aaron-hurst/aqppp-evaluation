@@ -16,13 +16,17 @@ class SqlInterface {
   static void ShowError(unsigned int handle_type, const SQLHANDLE &handle);
   static void ShowError(unsigned int handle_type, const SQLHANDLE &handle,
                         const std::string query_str);
-  static void MakeSqlConnection(std::string odbc_name, std::string user_name,
-                                std::string pwd,
-                                SQLHANDLE &sqlconnectionhandle);
+  static void MakeSQLConnectionWithPassword(const std::string odbc_name,
+                                            const std::string user_name,
+                                            const std::string pwd,
+                                            SQLHANDLE &sqlconnectionhandle);
+  static void MakeSQLConnectionTrusted(const std::string db_name,
+                                       SQLHANDLE &sqlconnectionhandle);
   /*
   return a query result of given string query.
   */
-  static const int SqlQuery(const std::string query, SQLHANDLE &sqlstatementhandle);
+  static const int SqlQuery(const std::string query,
+                            SQLHANDLE &sqlstatementhandle);
 
   static std::string ComputeRandStr(SQLHANDLE &sqlConnectionHandle,
                                     std::string table_name, int seed,

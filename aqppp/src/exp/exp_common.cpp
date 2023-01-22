@@ -116,7 +116,7 @@ std::string FormQueryString(
 
   // Form and return full query string
   std::string query_str = "SELECT " + aggregation + "(" +
-                          aggregate_column_name + ") FROM " + db_name + "." +
+                          aggregate_column_name + ") FROM " + db_name + ".dbo." +
                           table_name + " WHERE " + query_condition_str + ";";
   return query_str;
 }

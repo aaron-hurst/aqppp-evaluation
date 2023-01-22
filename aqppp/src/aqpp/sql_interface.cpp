@@ -19,9 +19,43 @@ void SqlInterface::ShowError(unsigned int handle_type, const SQLHANDLE &handle,
   SqlInterface::ShowError(handle_type, handle);
 }
 
-void SqlInterface::MakeSqlConnection(std::string odbc_name,
-                                     std::string user_name, std::string pwd,
-                                     SQLHANDLE &sqlconnectionhandle) {
+void SqlInterface::MakeSQLConnectionTrusted(const std::string db_name,
+                                            SQLHANDLE &sql_connection_handle) {
+  SQLHANDLE sql_env_handle = NULL;
+  if (SQL_SUCCESS !=
+      SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sql_env_handle))
+    return;
+  if (SQL_SUCCESS != SQLSetEnvAttr(sql_env_handle, SQL_ATTR_ODBC_VERSION,
+                                   (SQLPOINTER)SQL_OV_ODBC3, 0))
+    return;
+  if (SQL_SUCCESS !=
+      SQLAllocHandle(SQL_HANDLE_DBC, sql_env_handle, &sql_connection_handle))
+    return;
+  NULL;
+
+  // Establish connection
+  SQLWCHAR retconstring[1024];
+  std::string conn_str =
+      "DRIVER={SQL Server};SERVER=localhost,1434;DATABASE=" + db_name +
+      ";Trusted=true;";  // connection string
+  std::wstring conn_string_w = std::wstring(conn_str.begin(), conn_str.end());
+  switch (SQLDriverConnect(sql_connection_handle, NULL,
+                           (SQLWCHAR *)conn_string_w.c_str(), SQL_NTS,
+                           retconstring, 1024, NULL, SQL_DRIVER_NOPROMPT)) {
+    case SQL_SUCCESS_WITH_INFO:
+      std::cout << "Success!" << std::endl;
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle, conn_str);
+      return;
+    default:
+      std::cout << "Error." << std::endl;
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle, conn_str);
+      return;
+  }
+}
+
+void SqlInterface::MakeSQLConnectionWithPassword(
+    const std::string odbc_name, const std::string user_name,
+    const std::string pwd, SQLHANDLE &sql_connection_handle) {
   SQLHANDLE sqlenvhandle = NULL;
   if (SQL_SUCCESS !=
       SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlenvhandle))
@@ -30,41 +64,40 @@ void SqlInterface::MakeSqlConnection(std::string odbc_name,
                                    (SQLPOINTER)SQL_OV_ODBC3, 0))
     return;
   if (SQL_SUCCESS !=
-      SQLAllocHandle(SQL_HANDLE_DBC, sqlenvhandle, &sqlconnectionhandle))
+      SQLAllocHandle(SQL_HANDLE_DBC, sqlenvhandle, &sql_connection_handle))
     return;
-
-  switch (SQLConnect(sqlconnectionhandle, (SQLWCHAR *)odbc_name.c_str(),
+  switch (SQLConnect(sql_connection_handle, (SQLWCHAR *)odbc_name.c_str(),
                      SQL_NTS, (SQLWCHAR *)user_name.c_str(), SQL_NTS,
                      (SQLWCHAR *)pwd.c_str(), SQL_NTS)) {
     case SQL_SUCCESS_WITH_INFO:
       std::cout << "success" << std::endl;
-      ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       break;
     default:
       std::cout << "error" << std::endl;
-      ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       getchar();
       return;
   }
 }
 
-int SqlInterface::ConnectDb(SQLHANDLE &sqlconnectionhandle, std::string dsn,
+int SqlInterface::ConnectDb(SQLHANDLE &sql_connection_handle, std::string dsn,
                             std::string user, std::string pwd) {
   int retcode = 0;
-  switch (SQLConnect(sqlconnectionhandle, (SQLWCHAR *)dsn.c_str(), SQL_NTS,
+  switch (SQLConnect(sql_connection_handle, (SQLWCHAR *)dsn.c_str(), SQL_NTS,
                      (SQLWCHAR *)user.c_str(), SQL_NTS, (SQLWCHAR *)pwd.c_str(),
                      SQL_NTS)) {
     case SQL_SUCCESS_WITH_INFO:
       std::cout << "success" << std::endl;
-      ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       break;
     case SQL_INVALID_HANDLE:
     case SQL_ERROR:
-      ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       retcode = -1;
       break;
     default:
-      ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       break;
   }
   return retcode;
@@ -75,29 +108,29 @@ return a query result of given string query.
 */
 const int SqlInterface::SqlQuery(const std::string query,
                                  SQLHANDLE &sqlstatementhandle) {
-   std::wstring wquery = std::wstring(query.begin(), query.end());
-   WCHAR *wq = const_cast<WCHAR *>(wquery.c_str());
-   // std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
-   if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle, wq, SQL_NTS)) {
-     std::cout << "Error with query: \n" << query << std::endl;
-     ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
-     return -1;
-   }
+  std::wstring wquery = std::wstring(query.begin(), query.end());
+  WCHAR *wq = const_cast<WCHAR *>(wquery.c_str());
+  // std::wcout << "Running SQL query:\n\t" << wquery << std::endl;
+  if (SQL_SUCCESS != SQLExecDirect(sqlstatementhandle, wq, SQL_NTS)) {
+    std::cout << "Error with query: \n" << query << std::endl;
+    ShowError(SQL_HANDLE_STMT, sqlstatementhandle);
+    return -1;
+  }
   return 0;
 }
 
 /*create sample and small_sample table in MySQL database.
  */
 std::pair<double, double> SqlInterface::CreateDBSamples(
-    SQLHANDLE &sqlconnectionhandle, int seed, std::string db_name,
+    SQLHANDLE &sql_connection_handle, int seed, std::string db_name,
     std::string table_name, std::pair<double, double> sample_rates,
     std::pair<std::string, std::string> sample_names) {
   double t_sample, t_sub_sample;
-  t_sample = CreateDbSample(sqlconnectionhandle, seed + 1, db_name, table_name,
-                            sample_rates.first, sample_names.first);
-  t_sub_sample =
-      CreateDbSample(sqlconnectionhandle, seed + 2, db_name, sample_names.first,
-                     sample_rates.second, sample_names.second);
+  t_sample = CreateDbSample(sql_connection_handle, seed + 1, db_name,
+                            table_name, sample_rates.first, sample_names.first);
+  t_sub_sample = CreateDbSample(sql_connection_handle, seed + 2, db_name,
+                                sample_names.first, sample_rates.second,
+                                sample_names.second);
   return {t_sample, t_sub_sample};
 }
 
@@ -112,7 +145,8 @@ const SqlInterface::TableColumns SqlInterface::GetTableColumns(
       "float", "int",
       "numeric"};  // TODO extend to include all numerical SQL types
 
-  // Prepare SQL query to request all column names and types for the given table
+  // Prepare SQL query to request all column names and types for the given
+  // table
   std::string stmt =
       "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE "
       "TABLE_NAME = '" +
@@ -198,23 +232,24 @@ std::string SqlInterface::ComputeRandStr(SQLHANDLE &sqlConnectionHandle,
          "))<=" + std::to_string(sample_rate);
 }
 
-double SqlInterface::CreateDbSample(SQLHANDLE &sqlconnectionhandle, int seed,
+double SqlInterface::CreateDbSample(SQLHANDLE &sql_connection_handle, int seed,
                                     std::string db_name, std::string table_name,
                                     double sample_rate,
                                     std::string sample_name) {
   SQLHANDLE sqlstatementhandle = NULL;
-  if (SQLAllocHandle(SQL_HANDLE_STMT, sqlconnectionhandle,
+  if (SQLAllocHandle(SQL_HANDLE_STMT, sql_connection_handle,
                      &sqlstatementhandle) != SQL_SUCCESS)
     return -1;
-  std::string sample_full_name = db_name + "." + sample_name;
-  std::string table_full_name = db_name + "." + table_name;
+  std::string sample_full_name = db_name + ".dbo." + sample_name;
+  std::string table_full_name = db_name + ".dbo." + table_name;
   std::string drop_sample = "IF OBJECT_ID('" + sample_full_name +
                             "', 'U') IS NOT NULL DROP TABLE " +
                             sample_full_name + ";";
   std::string create_sample =
       "SELECT * INTO " + sample_full_name + " FROM " + table_full_name +
       " WHERE " +
-      ComputeRandStr(sqlconnectionhandle, table_name, seed, sample_rate) + ";";
+      ComputeRandStr(sql_connection_handle, table_name, seed, sample_rate) +
+      ";";
   std::string create_sample_cstore_indx =
       "CREATE CLUSTERED COLUMNSTORE INDEX cci_" + sample_name + " ON " +
       sample_full_name + ";";
@@ -274,8 +309,8 @@ double SqlInterface::Column2Numeric(SQLHANDLE &sqlstatementhandle, int col_id,
   }
 
   // Otherwise: numerical data
-  // NOTE: It was necessary to change the data type for the buffer in SQLGetData
-  // to float due to the type of the data I am using.
+  // NOTE: It was necessary to change the data type for the buffer in
+  // SQLGetData to float due to the type of the data I am using.
   // TODO: Make this code adaptive so that it determine which type to use in
   // SQLGetData by itself (i.e. whether to use SQL_C_FLOAT, SQL_C_DOUBLE,
   // SQL_C_INT, etc.).
@@ -301,17 +336,17 @@ std::string SqlInterface::ReadTableStr(
     demand_str += ", " + CONDITION_NAMES[i];
 
   std::string query =
-      "SELECT " + demand_str + " FROM " + db_name + "." + table_name + ";";
+      "SELECT " + demand_str + " FROM " + db_name + ".dbo." + table_name + ";";
   return query;
 }
 
-double SqlInterface::ReadDB(SQLHANDLE &sqlconnectionhandle,
+double SqlInterface::ReadDB(SQLHANDLE &sql_connection_handle,
                             std::vector<std::vector<double>> &o_table,
                             std::string db_name, std::string table_name,
                             std::string aggregate_column_name,
                             std::vector<std::string> condition_column_names) {
   SQLHANDLE sqlstatementhandle = NULL;
-  if (SQLAllocHandle(SQL_HANDLE_STMT, sqlconnectionhandle,
+  if (SQLAllocHandle(SQL_HANDLE_STMT, sql_connection_handle,
                      &sqlstatementhandle) != SQL_SUCCESS)
     return -1;
   double t_start = clock();
@@ -322,8 +357,8 @@ double SqlInterface::ReadDB(SQLHANDLE &sqlconnectionhandle,
   short int COL_NUM = 0;
   SQLNumResultCols(sqlstatementhandle, &COL_NUM);
   for (int i = 0; i < COL_NUM; i++)
-    o_table.push_back(std::vector<double>());  // add a vector to the table for
-                                               // each column in the query
+    o_table.push_back(std::vector<double>());  // add a vector to the table
+                                               // for each column in the query
   while (SQLFetch(sqlstatementhandle) == SQL_SUCCESS) {
     double acc_data =
         Column2Numeric(sqlstatementhandle, 0, aggregate_column_name);

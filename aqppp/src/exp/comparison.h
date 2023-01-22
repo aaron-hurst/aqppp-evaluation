@@ -19,7 +19,7 @@ class ComparisonExperiment {
  private:
   const std::vector<std::string> AGGREGATIONS_ = {"COUNT", "SUM", "AVG"};
   const std::string DATASET_NAME_ = "uci-household_power_consumption";
-  const std::string DB_NAME_ = "uci_household_power_consumption.dbo";
+  const std::string DB_NAME_ = "uci_household_power_consumption";
   const std::string TABLE_NAME_ = "household_power_consumption_100k";
   std::string SAMPLE_TABLE_NAME_;
   std::string SUB_SAMPLE_TABLE_NAME_;
@@ -38,7 +38,7 @@ class ComparisonExperiment {
   const double CI_INDEX_ = 1.96;
   const double NF_MAX_ITER_ = 1000;
   const bool INIT_DISTINCT_EVEN_ = false;
-  const bool isMTL_ = false;
+  const bool isMTL_ = true;
   const int ALL_MTL_POINTS_ = 50000;
   const int EP_PIECE_NUM_ = 20;
   const int N_RUNS_LOAD_SAMPLES_ = 1;
@@ -49,8 +49,8 @@ class ComparisonExperiment {
       const std::vector<std::vector<double>> sample,
       const std::string aggregate_column_name,
       std::vector<std::string> condition_column_names,
-      std::vector<std::vector<aqppp::CA>> o_NF_mtl_points,
-      aqppp::MTL_STRU o_NF_mtl_res, FILE* log_file) const;
+      std::vector<std::vector<aqppp::CA>>& o_NF_mtl_points,
+      aqppp::MTL_STRU& o_NF_mtl_res, FILE* log_file) const;
   void WriteParameters(FILE* fp) const;
   static const double PercentageError(const double estimate,
                                       const double exact_value);

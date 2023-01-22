@@ -65,7 +65,7 @@ void ComparisonExperiment::WriteParameters(FILE* fp) const {
   fprintf(fp, "N_RUNS_LOAD_SAMPLES  %i\n", N_RUNS_LOAD_SAMPLES_);
   fprintf(fp, "RAND_SEED            %.3f\n", RAND_SEED_);
   fprintf(fp, "CI_INDEX             %.3f\n", CI_INDEX_);
-  fprintf(fp, "SAMPLE_ROW_NUM       %.3f\n", SAMPLE_ROW_NUM_);
+  fprintf(fp, "SAMPLE_ROW_NUM       %i\n", SAMPLE_ROW_NUM_);
   fprintf(fp, "NF_MAX_ITER          %.3f\n", NF_MAX_ITER_);
   fprintf(fp, "INIT_DISTINCT_EVEN   %i\n", INIT_DISTINCT_EVEN_);
   fprintf(fp, "ALL_MTL_POINTS       %i\n", ALL_MTL_POINTS_);
@@ -181,10 +181,10 @@ const int ComparisonExperiment::RunExperiment() {
         SAMPLE_ROW_NUM_ = sample[0].size();
 
         // Compute prefix cube
-        // double compute_prefix_cube_time = ComputePrefixCube(
-        //    sample, aggregate_column_name, {condition_column_name},
-        //    NF_mtl_points, NF_mtl_res, log_file);
-        // compute_prefix_cube_times.push_back(compute_prefix_cube_time);
+        double compute_prefix_cube_time = ComputePrefixCube(
+           sample, aggregate_column_name, {condition_column_name},
+           NF_mtl_points, NF_mtl_res, log_file);
+        compute_prefix_cube_times.push_back(compute_prefix_cube_time);
       }
 
       // Sampling only
@@ -195,14 +195,13 @@ const int ComparisonExperiment::RunExperiment() {
 
       // AQP++
       double t_aqppp_start = clock();
-      std::pair<double, double> result_aqppp = {0, 0};
-      // std::pair<double, double> result_aqppp =
-      //     aqppp::Aqpp(PAR.SAMPLE_ROW_NUM, PAR.SAMPLE_RATE_, PAR.CI_INDEX_)
-      //         .AqppSumQuery(query_id, info_file, sample, small_sample,
-      //                       NF_mtl_points, NF_mtl_res, queries[query_id]);
+      std::pair<double, double> result_aqppp =
+          aqppp::Aqpp(SAMPLE_ROW_NUM_, SAMPLE_RATE_, CI_INDEX_)
+              .AqppSumQuery(query_id, info_file, sample, small_sample,
+                            NF_mtl_points, NF_mtl_res, {query});
       double duration_aqppp = (clock() - t_aqppp_start) / CLOCKS_PER_SEC;
 
-      // Exact value... not necessary since I compute this elsewhere already?
+      // Exact value
       double t_exact_start = clock();
       double exact_value = 0;
       if (0 != expDemo::QueryRealValue({query}, {condition_column_name},
@@ -222,16 +221,16 @@ const int ComparisonExperiment::RunExperiment() {
       double error_aqppp = result_aqppp.first - exact_value;
       double error_sampling_pct =
           PercentageError(result_sampling.first, exact_value);
-      double error_aqp_pct = PercentageError(result_aqppp.first, exact_value);
+      double error_aqppp_pct = PercentageError(result_aqppp.first, exact_value);
       errors_sampling_pct.push_back(error_sampling_pct);
-      errors_aqppp_pct.push_back(error_aqp_pct);
+      errors_aqppp_pct.push_back(error_aqppp_pct);
       total_time_sampling += duration_sampling;
       total_time_aqppp += duration_aqppp;
       total_time_exact += duration_exact;
       fprintf(results_file, "%d,%d,%s,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f\n",
               query_id, agg_col_id, aggregation.c_str(), result_sampling.first,
               result_aqppp.first, exact_value, error_sampling, error_aqppp,
-              error_sampling_pct, error_aqp_pct, result_sampling.second,
+              error_sampling_pct, error_aqppp_pct, result_sampling.second,
               result_aqppp.second, duration_sampling, duration_aqppp,
               duration_exact);
 
@@ -313,8 +312,8 @@ const double ComparisonExperiment::ComputePrefixCube(
     const std::vector<std::vector<double>> sample,
     const std::string aggregate_column_name,
     const std::vector<std::string> condition_column_names,
-    std::vector<std::vector<aqppp::CA>> o_NF_mtl_points,
-    aqppp::MTL_STRU o_NF_mtl_res, FILE* log_file) const {
+    std::vector<std::vector<aqppp::CA>>& o_NF_mtl_points,
+    aqppp::MTL_STRU& o_NF_mtl_res, FILE* log_file) const {
   double t_start = clock();
 
   // Compute CAsample
@@ -323,7 +322,6 @@ const double ComparisonExperiment::ComputePrefixCube(
   aqppp::Tool::TransSample(sample, CAsample);
 
   // Allocate space budget for prefix cube
-  double t_prepare_start = clock();
   std::vector<int> mtl_nums;
   aqppp::AssignBudgetForDimensions(SAMPLE_RATE_, ALL_MTL_POINTS_, EP_PIECE_NUM_,
                                    SAMPLE_ROW_NUM_, CI_INDEX_, NF_MAX_ITER_,

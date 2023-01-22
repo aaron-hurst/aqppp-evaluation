@@ -10,7 +10,13 @@ namespace aqppp {
 		this->PAR.CI_INDEX = ci_index;
 	}
 
-	std::pair<double, double> Aqpp::AqppSumQuery(int query_id, FILE* info_file, const std::vector<std::vector<double>> &sample, const std::vector<std::vector<double>> &small_sample, const std::vector<std::vector<CA>>& mtl_points, const MTL_STRU& mtl_res, const std::vector<Condition>& user_demands)
+	std::pair<double, double> Aqpp::AqppSumQuery(
+		int query_id, FILE* info_file,
+		const std::vector<std::vector<double>> &sample,
+		const std::vector<std::vector<double>> &small_sample,
+		const std::vector<std::vector<CA>>& mtl_points,
+		const MTL_STRU& mtl_res,
+		const std::vector<Condition>& user_demands)
 	{
 		const int DIM = mtl_points.size();
 		std::vector<RGs> all_rgs = std::vector<RGs>();
@@ -37,19 +43,24 @@ namespace aqppp {
 
 		FillMaterializeChoices(0, small_sample, all_rgs, user_demands, min_ci, mtl_choices, final_mtl_choices);
 		
+		// Compute difference between sampling and pre-computed aggregation on the sample
 		std::vector<std::pair<double, double>> final_diff_res = std::vector<std::pair<double, double>>();
 		FinalComputeDifference(sample, user_demands, final_mtl_choices, final_diff_res);
-		//pair<double, double> spl_sum_ci = Sampling::SamplingForSumQuery(sample, user_demands, sample_ratio);
 		std::pair<double, double> spl_sum_ci = final_diff_res[0];
 		std::pair<double, double> hybrid_sum_ci = final_diff_res[1];
+		
+		// Return sampling results if they have a tighter confidence interval
 		if (spl_sum_ci.second < hybrid_sum_ci.second) return spl_sum_ci;
 
-		std::vector<int> inds = std::vector<int>(DIM);
+		// prefix cube not computet at first???
 		if (mtl_res.size() == 0)
 		{
 			hybrid_sum_ci.first = -1;
 			return hybrid_sum_ci;
 		}
+		
+		// Compute final result
+		std::vector<int> inds = std::vector<int>(DIM);
 		double sum2 = 0;
 		ComputeMquery(0, inds, mtl_res, final_mtl_choices, sum2, 0);
 		hybrid_sum_ci.first += sum2;

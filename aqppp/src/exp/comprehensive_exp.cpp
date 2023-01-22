@@ -72,7 +72,7 @@ namespace expDemo {
 		 std::string root_path = GetExpRootPath() + "/samplerate" + std::to_string(PAR.SAMPLE_RATE);
 			double s_exp = clock();
 			ExpPar exp_par = GetExpPar();
-			FILE *info_file, *form_file, *par_file, *query_file, *direct_query_file;
+			FILE *info_file, *form_file, *par_file, *query_file;
 			aqppp::Tool::MkDirRecursively(root_path);
 			fopen_s(&info_file, (root_path+"/info.txt").data(), "w");
 			fopen_s(&form_file, (root_path+"/form_res.txt").data(), "w");

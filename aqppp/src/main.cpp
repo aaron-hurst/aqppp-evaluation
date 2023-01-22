@@ -49,46 +49,47 @@ int main() {
   ////std::cout << "2--query generation" << std::endl;
 
   // Define SQL handles
-  SQLHANDLE sqlenvhandle = NULL;
-  SQLHANDLE sqlconnectionhandle = NULL;
+  SQLHANDLE sql_env_handle = NULL;
+  SQLHANDLE sql_connection_handle = NULL;
   SQLWCHAR retconstring[1000];
 
   // Connect to SQL Server
   std::cout << "Attempting connection to SQL Server..." << std::endl;
   if (SQL_SUCCESS !=
-      SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sqlenvhandle))
+      SQLAllocHandle(SQL_HANDLE_ENV, SQL_NULL_HANDLE, &sql_env_handle))
     return -1;
-  if (SQL_SUCCESS != SQLSetEnvAttr(sqlenvhandle, SQL_ATTR_ODBC_VERSION,
+  if (SQL_SUCCESS != SQLSetEnvAttr(sql_env_handle, SQL_ATTR_ODBC_VERSION,
                                    (SQLPOINTER)SQL_OV_ODBC3, 0))
     return -1;
   if (SQL_SUCCESS !=
-      SQLAllocHandle(SQL_HANDLE_DBC, sqlenvhandle, &sqlconnectionhandle))
+      SQLAllocHandle(SQL_HANDLE_DBC, sql_env_handle, &sql_connection_handle))
     return -1;
   switch (SQLDriverConnect(
-      sqlconnectionhandle, NULL,
-      (SQLWCHAR*)L"DRIVER={SQL "
-                 L"Server};SERVER=localhost,1434;DATABASE=uci_household_power_"
-                 L"consumption;Trusted=true;",
+      sql_connection_handle, NULL,
+      (SQLWCHAR*)L"DRIVER={SQL Server};"
+                 L"SERVER=localhost,1434;"
+                 L"DATABASE=uci_household_power_consumption;"
+                 L"Trusted=true;",
       SQL_NTS, retconstring, 1024, NULL, SQL_DRIVER_NOPROMPT)) {
     case SQL_SUCCESS_WITH_INFO:
       std::cout << "Success!" << std::endl;
-      aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       break;
     default:
       std::cout << "Error." << std::endl;
-      aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sqlconnectionhandle);
+      aqppp::SqlInterface::ShowError(SQL_HANDLE_DBC, sql_connection_handle);
       return -1;
   }
 
   // Run experiments
   std::cout << "Beginning experiments..." << std::endl;
-  if (RUN_DEMO) expDemo::ComprehensiveExp::Exp(sqlconnectionhandle);
+  if (RUN_DEMO) expDemo::ComprehensiveExp::Exp(sql_connection_handle);
   if (RUN_COMPARISON)
-    exp_comparison::ComparisonExperiment(sqlconnectionhandle).RunExperiment();
+    exp_comparison::ComparisonExperiment(sql_connection_handle).RunExperiment();
 
   std::cout << "All experiments completed." << std::endl;
-  SQLDisconnect(sqlconnectionhandle);
-  SQLFreeHandle(SQL_HANDLE_DBC, sqlconnectionhandle);
-  SQLFreeHandle(SQL_HANDLE_ENV, sqlenvhandle);
+  SQLDisconnect(sql_connection_handle);
+  SQLFreeHandle(SQL_HANDLE_DBC, sql_connection_handle);
+  SQLFreeHandle(SQL_HANDLE_ENV, sql_env_handle);
   return 0;
 }

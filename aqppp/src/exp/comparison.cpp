@@ -74,7 +74,7 @@ void ComparisonExperiment::WriteParameters(FILE* fp) const {
 }
 
 const double ComparisonExperiment::PercentageError(const double estimate, const double exact_value) {
-  if (exact_value > 0) {
+  if (exact_value != 0) {
     return abs(estimate - exact_value) / exact_value * 100;
   } else if (estimate == 0) {
     return 0;
